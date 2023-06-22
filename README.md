@@ -1,5 +1,6 @@
 # lightwebclient
-It's a small web client impleted in C/C++ that supports basic websites, meaning: 
+It's a small web client impleted in C/C++ that supports basic websites, meaning:
+- Supports SSL, through OpenSSL, it automatic browse on port 443. 
 - Supports HTTP/1.1, doesnt't support HTTP/2 or HTTP/3.
 - Supports deflated enconding, doesn't support gzip neither br.
 - Doesn't support 301, forwarding
