@@ -22,6 +22,11 @@ make main
 ./main www.google.com
 ```
 
+## Buffer Size recommended
+|web site|buffer size (char)|method|
+|-|-|-|
+|www.google.com|20000|get|
+|api.telegram.org/bot<BOTTOKEN>/getMe|700|get
 
 ## Reqs
 - openssl (libssl-dev) libssl1.1
