@@ -9,7 +9,7 @@ int main(int argc, char const *argv[])
 	}
 
 	WebClientSSL webClient(argv[1]);
-	int buff_size = 6400; // for hostelworld
+	int buff_size = 100000; // for hostelworld
 	char buff[buff_size];
 
 	if(webClient.get_error() < 0)

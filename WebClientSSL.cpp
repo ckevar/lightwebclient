@@ -238,7 +238,7 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 	    	std::cerr << "[WARNING:] buffer size too small" << std::endl;
 	    	return -8;
 	    }
-    	poll(&m_pfd, 1, 0); /* POLLIN is set until there's no data to be read on the socket */
+    	poll(&m_pfd, 1, 100); /* POLLIN is set until there's no data to be read on the socket */
     }
 	std::cerr <<  response << std::endl;
     return 1;
