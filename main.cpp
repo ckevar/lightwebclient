@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
 	// webClient.set_header("Authorization: bxase\r\n", 22);
 	// webClient.set_header("Authorization-2: bxase2\r\n", 25);
 
-	webClient.get("/bot6234049897:AAGWLi4-5vCQwQhraFUBgH-me3970XO1byg/getMe", 56, buff, buff_size);
+	webClient.get("/bot<BOT-TOKEN>/getMe", 56, buff, buff_size);
 	// webClient.post(resource, content, content_length);
 	
 	//webClient.free() /* No needed the WebClientSSL destructor */
