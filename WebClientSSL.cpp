@@ -102,7 +102,7 @@ int WebClientSSL::get_error() {
 	return m_error;
 }
 
-void WebClientSSL::build_header(const char *resource, int resource_len, char *content, int content_length) {
+void WebClientSSL::BuildHeader(const char *resource, int resource_len, char *content, int content_length) {
 	http_it = http;
 
 	/* setting the get method */
@@ -163,9 +163,7 @@ Sec-Fetch-User: ?1\r\n", 94);
 	if (content_length == 0) return;
 }
 
-int WebClientSSL::get(const char *resource, int resource_len, char *response, int response_length) {	
-	build_header(resource, resource_len, nullptr, 0);
-
+void WebClientSSL::Write() {
 	/* SSL_WRITE */
 	m_error = SSL_write(m_ssl, http, http_it - http);
     if (m_error < 1) {
@@ -175,15 +173,16 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
         SSL_free(m_ssl);
         close(m_fd);
         SSL_CTX_free(m_ctx);
-        return -6;
+        m_error = -6;
     }
+}
 
-
-    /* SSL_READ */
+void WebClientSSL::Read(char *response, int response_length){
     char *response_i = response;
     struct pollfd m_pfd;
     m_pfd.fd = m_fd;
     m_pfd.events = POLLIN;
+
     poll(&m_pfd, 1, -1);
 
     while(m_pfd.revents == POLLIN) {	
@@ -225,7 +224,8 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 
     		else if (m_error == SSL_ERROR_SSL)
     			std::cerr << "SSL ERROR" << std::endl;
-	    	return -7;
+    		m_error = -7;
+	    	return;
 	    }
 	    response_i += m_error;
 	    response_length -= m_error;
@@ -236,11 +236,25 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 
 	    else if (response_length < 0) {
 	    	std::cerr << "[WARNING:] buffer size too small" << std::endl;
-	    	return -8;
+	    	m_error = -8;
+	    	return;
 	    }
     	poll(&m_pfd, 1, 100); /* POLLIN is set until there's no data to be read on the socket */
     }
-	std::cerr <<  response << std::endl;
+	std::cerr <<  response << std::endl;	
+}
+
+int WebClientSSL::get(const char *resource, int resource_len, char *response, int response_length) {	
+	BuildHeader(resource, resource_len, nullptr, 0);
+
+	// std::cout << http_it << std::endl;
+
+	Write();
+	if (m_error < 0) return m_error;
+
+	Read(response, response_length);
+	if (m_error < 0) return m_error;
+	
     return 1;
 }
 

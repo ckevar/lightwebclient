@@ -23,7 +23,7 @@ make main
 ```
 
 ## Buffer Size recommended
-|web site|buffer size (char)|method|
+|Web|Buffer Size (char)|REST Method|
 |-|-|-|
 |www.google.com|20000|get|
 |api.telegram.org/bot<BOTTOKEN>/getMe|700|get

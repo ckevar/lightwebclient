@@ -28,6 +28,7 @@ public:
 
 	/* Executes requests get */
 	int get(const char *resource, int length, char *buff, int buff_size); 
+	int post(const char *resource, int length, char *buff, int buff_size); 
 
 	/* gets error */
 	int get_error();
@@ -46,6 +47,9 @@ private:
 	char *m_hostname;
 
 	int OpenConnection();
-	void build_header(const char *resource, int length, char *buff, int buff_size);
+	void BuildHeader(const char *resource, int length, char *buff, int buff_size);
+	void Read(char *response, int response_length);
+	void Write();
+
 };
 #endif
