@@ -10,6 +10,7 @@ It's a small web client impleted in C/C++ that supports basic websites, meaning:
 - It doesn't not use malloc either.
 - Only supports *get* method, as follows: get(resource, resource_len, arriving_buffer, arriving_buffer_length)
 - *post* method - WORKING ON IT
+- It ignores server headers
 
 ## Getting Started
 #### Compile

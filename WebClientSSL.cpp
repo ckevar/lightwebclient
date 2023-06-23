@@ -21,42 +21,49 @@ WebClientSSL::WebClientSSL(const char *host) {
 	m_hostname = (char *) host;
 
 	OpenSSL_add_all_algorithms(); // load & register all cryptos
-    SSL_load_error_strings();
-    const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */
-    m_ctx = SSL_CTX_new(method);
+	SSL_load_error_strings();
+	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */
+	m_ctx = SSL_CTX_new(method);
     
-    if (m_ctx != nullptr) {
+	if (m_ctx != nullptr) {
 		m_ssl = SSL_new(m_ctx);
 		if (m_ssl != nullptr) {
-    		SSL_set_tlsext_host_name(m_ssl, m_hostname);
-    		m_error = OpenConnection(); /* defines m_fd */
-    		if (m_error == 0) {
-	    		SSL_set_fd(m_ssl, m_fd);
-	    		m_error = SSL_connect(m_ssl);
+			SSL_set_tlsext_host_name(m_ssl, m_hostname);
+			m_error = OpenConnection(); /* defines m_fd */
+			if (m_error == 0) {
+				SSL_set_fd(m_ssl, m_fd);
+				m_error = SSL_connect(m_ssl);
     		}
 		}
-		else
+		else {
+			std::cerr << "[ERROR:] SSL_new returned nullptr." << std::endl;
 			m_error = -2;
-
+		}
     } 
-    else
+    else {
+    	std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
 		m_error = -1;
+    }
 }
 
 
 int WebClientSSL::OpenConnection() {
 	struct hostent *host;
 	
-	if((host = gethostbyname(m_hostname)) == nullptr)
+	if((host = gethostbyname(m_hostname)) == nullptr) {
+		std::cerr << "[ERROR:] gethostbyname returned nullptr." << std::endl; 
 		return -3;
+	}
 	
 	struct addrinfo hints = {0}, *addrs;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	if(getaddrinfo(m_hostname, HTTPS_PORT, &hints, &addrs) != 0)
+	if(getaddrinfo(m_hostname, HTTPS_PORT, &hints, &addrs) != 0) {
+		std::cerr << "[ERROR:] on getaddrinfo" std::endl;
 		return -4;
+	}
 
 	for (struct addrinfo *addr = addrs; addr != nullptr; addr = addr->ai_next) {
         m_fd = socket(addrs->ai_family, addrs->ai_socktype, addrs->ai_protocol);
@@ -72,8 +79,10 @@ int WebClientSSL::OpenConnection() {
 
     freeaddrinfo(addrs);
 
-	if(m_fd == -1)
+	if(m_fd == -1) {
+		std::cerr << "[ERROR:] No file description could be defined." << std::endl;
 		return -5;
+	}
 
 	return 0;
 }
@@ -95,7 +104,7 @@ void WebClientSSL::show_certificate() {
         X509_free(cert);
     }
     else
-    	std::cerr << "Info: No client certificates configured." << std::endl;
+    	std::cerr << "[WARNING]: No client certificates configured." << std::endl;
 }
 
 int WebClientSSL::get_error() {
@@ -166,10 +175,14 @@ Sec-Fetch-User: ?1\r\n", 94);
 void WebClientSSL::Write() {
 	/* SSL_WRITE */
 	m_error = SSL_write(m_ssl, http, http_it - http);
+
     if (m_error < 1) {
         std::cerr << "[ERROR:] on SSL_write" << std::endl;
+
+        /* On SSL error, it needs to follow a certain protocol */
         if (SSL_get_error(m_ssl, m_error) == 6)
             SSL_shutdown(m_ssl);
+
         SSL_free(m_ssl);
         close(m_fd);
         SSL_CTX_free(m_ctx);
@@ -178,76 +191,78 @@ void WebClientSSL::Write() {
 }
 
 void WebClientSSL::Read(char *response, int response_length){
-    char *response_i = response;
-    struct pollfd m_pfd;
-    m_pfd.fd = m_fd;
-    m_pfd.events = POLLIN;
+	char *response_i = response;
+	struct pollfd m_pfd;
+	m_pfd.fd = m_fd;
+	m_pfd.events = POLLIN;
 
-    poll(&m_pfd, 1, -1);
+	poll(&m_pfd, 1, -1);
 
-    while(m_pfd.revents == POLLIN) {	
-	    m_error = SSL_read(m_ssl, response_i, response_length);
+	while(m_pfd.revents == POLLIN) {	
+		m_error = SSL_read(m_ssl, response_i, response_length);
 		
 		if(m_error < 1) {
-	    	std::cerr << "[ERROR:] on SSL_read " << m_error << std::endl;
-	    	m_error = SSL_get_error(m_ssl, m_error);
-    		std::cerr << "[ERROR:] " << m_error << std::endl;
+			std::cerr << "[ERROR:] SSL_read " << m_error << ", SSL_get_error type: ";
+			m_error = SSL_get_error(m_ssl, m_error);
 
-    		if (m_error == SSL_ERROR_NONE) {
-    			std::cerr << "No errors " << std::endl;
-    			break;
-    		}
+			if (m_error == SSL_ERROR_NONE) {
+				std::cerr << "No errors in fact." << std::endl;
+				break;
+			}
 
-    		else if (m_error == SSL_ERROR_ZERO_RETURN) 
-    			std::cerr << "Zero return" << std::endl;
+			else if (m_error == SSL_ERROR_ZERO_RETURN) 
+				std::cerr << "Zero return." << std::endl;
 
-    		else if (m_error == SSL_ERROR_WANT_READ)
-    			std::cerr << "Want to read " << std::endl;
+			else if (m_error == SSL_ERROR_WANT_READ)
+				std::cerr << "Want to read." << std::endl;
 
-    		else if (m_error == SSL_ERROR_WANT_WRITE)
-    			std::cerr << "Want to write " << std::endl;
+			else if (m_error == SSL_ERROR_WANT_WRITE)
+				std::cerr << "Want to write." << std::endl;
     		
-    		else if (m_error == SSL_ERROR_WANT_CONNECT)
-    			std::cerr << "want to connect" << std::endl;
+			else if (m_error == SSL_ERROR_WANT_CONNECT)
+				std::cerr << "Want to connect." << std::endl;
 
     		else if (m_error == SSL_ERROR_WANT_ACCEPT)
-    			std::cerr << "Want to accept" << std::endl;
+				std::cerr << "Want to accept." << std::endl;
 
-    		else if (m_error == SSL_ERROR_WANT_X509_LOOKUP)
-    			std::cerr << "X509 ERROR" << std::endl;
+			else if (m_error == SSL_ERROR_WANT_X509_LOOKUP)
+				std::cerr << "X509 Lookup." << std::endl;
 
-    		else if (m_error == SSL_ERROR_SYSCALL) {
-    			std::cerr << "SYSCALL ERROR ";
-    			if (ERR_get_error() == 0) break;
-    			std::cerr << "something else happened " << std::endl;
+			else if (m_error == SSL_ERROR_SYSCALL) {
+				std::cerr << "SYSCALL ";
+				if (ERR_get_error() == 0) {
+					std::cerr << " EOF, no error." << std::endl;
+					break;
+    			}
+    			std::cerr << "Something went wrong." << std::endl;
     		}
 
     		else if (m_error == SSL_ERROR_SSL)
-    			std::cerr << "SSL ERROR" << std::endl;
+    			std::cerr << "SSL" << std::endl;
     		m_error = -7;
 	    	return;
 	    }
 	    response_i += m_error;
 	    response_length -= m_error;
-		std::cerr << " left space " <<  response_length << std::endl;
 
 	    if (response_length == 0) 
-	    	std::cerr << "[WARNING:] buffer size might be too small" << std::endl;
+	    	std::cerr << "[WARNING:] Buffer size might be too small" << std::endl;
 
 	    else if (response_length < 0) {
-	    	std::cerr << "[WARNING:] buffer size too small" << std::endl;
+	    	std::cerr << "[WARNING:] Buffer size is too small" << std::endl;
 	    	m_error = -8;
 	    	return;
 	    }
-    	poll(&m_pfd, 1, 100); /* POLLIN is set until there's no data to be read on the socket */
+	    /* TODO: For chunk Enconding Transfer, the timeout on poll needs
+	       to be change to a value that the network can handle. This requires 
+	       to parse the header to undestand the arrival content */
+    	poll(&m_pfd, 1, 0); /* POLLIN is set until there's no data to be read on the socket */
     }
 	std::cerr <<  response << std::endl;	
 }
 
 int WebClientSSL::get(const char *resource, int resource_len, char *response, int response_length) {	
 	BuildHeader(resource, resource_len, nullptr, 0);
-
-	// std::cout << http_it << std::endl;
 
 	Write();
 	if (m_error < 0) return m_error;

@@ -20,15 +20,11 @@ int main(int argc, char const *argv[])
 
 	if(webClient.get_error() < 0)
 		return -1;
-	// webClient.set_header("Authorization: bxase\r\n", 22);
-	// webClient.set_header("Authorization-2: bxase2\r\n", 25);
-
 
 	sprintf(resource, "/bot%s/getMe", TG_TOKEN);
 
 	webClient.get(resource, TG_TOKEN_LEN + 10, buff, buff_size);
 	// webClient.post(resource, content, content_length);
 	
-	//webClient.free() /* No needed the WebClientSSL destructor */
 	return 0;
 }
