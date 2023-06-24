@@ -43,8 +43,7 @@ int main(int argc, char const *argv[])
 	sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
 	webClient.set_header("Content-Type: application/x-www-form-urlencoded\r\n", 49);
 	int buff_in = WebClient_urlencode(buff, content);
-	// std::cout << buff_in << " bytes in " << buff << std::endl;
-	webClient.post(resource, TG_TOKEN_LEN + 16, buff, buff_in, buff_size);
+	webClient.post(resource, buff, buff_in, buff_size);
 
 	/* EXAMPLES */
 	// sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
@@ -62,6 +61,6 @@ int main(int argc, char const *argv[])
 	
 	// sprintf(resource, "/", TG_TOKEN);
 	// webClient.get("/", 1, buff, buff_size);
-	
+
 	return 0;
 }

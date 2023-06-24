@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
 	int buff_size = BUFFSIZE_WWW_GOOGLE_COM;
 	char buff[BUFFSIZE_WWW_GOOGLE_COM];
 
-	webClient.get("/", 1, buff, buff_size);
+	webClient.get("/", buff, buff_size);
 
 	return 0;
 }

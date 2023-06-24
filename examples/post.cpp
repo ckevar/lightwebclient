@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
 
 	sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
 	memcpy(resource + TG_TOKEN_LEN + 16, "?parse_mode=HTML&text=test+test%3F%2C+%3Cb%3Etest%3C%2Fb%3E&chat_id=<TELEGRAM_CHAT_ID>", 77);
-	webClient.post(resource, TG_TOKEN_LEN + 16 + 77, buff, 0, buff_size);
+	webClient.post(resource, buff, 0, buff_size);
 		
 	return 0;
 }

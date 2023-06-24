@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
 	sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
 	webClient.set_header("Content-Type: application/x-www-form-urlencoded\r\n", 49);
 	memcpy(buff, "parse_mode=HTML&text=test+test%3F%2C+%3Cb%3Etest%3C%2Fb%3E&chat_id=597192342", 76);
-	webClient.post(resource, TG_TOKEN_LEN + 16, buff, 76, buff_size);
+	webClient.post(resource, buff, 76, buff_size);
 
 	return 0;
 }

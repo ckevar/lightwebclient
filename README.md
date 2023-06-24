@@ -4,16 +4,16 @@ It's a small web client impleted in C/C++ that supports basic websites, meaning:
 - Supports HTTP/1.1, doesnt't support HTTP/2 or HTTP/3.
 - Supports deflated enconding, doesn't support gzip neither br.
 - Supports get and post method only, check under folder examples.
-- Supports a function to enconde x-www-form-urlenconded through c++ :
+- Supports a function to enconde x-www-form-urlenconded through c++, see example/x-form-urlencode.cpp:
 ```c++
 std::map<const char *, const char*>
 ```
-see example/x-form-urlencode.cpp
 - Doesn't support 301, forwarding
 - Doesn't support "Transfer-Encoding: chunked"
 - Doesn't no support "Content-Length" on response headers, so, the buff size has to be determined by trial-and-error.
 - Doesn't use malloc either.
 - Doesn't support header response handling.
+- Doesn't support application/json
 
 The idea of the project is to be as light as possible.
 

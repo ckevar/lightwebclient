@@ -111,7 +111,7 @@ int WebClientSSL::get_error() {
 	return m_error;
 }
 
-void WebClientSSL::BuildHeader(const char *resource, int resource_len, char *content, int content_length, char method) {
+void WebClientSSL::BuildHeader(const char *resource, char *content, int content_length, char method) {
 	http_it = http;
 
 	/* setting the get method */
@@ -124,20 +124,14 @@ void WebClientSSL::BuildHeader(const char *resource, int resource_len, char *con
 	}
 
 	/* setting the resource */
-	memcpy(http_it, resource, resource_len);
-	http_it += resource_len;
-
-	/* setting HTTP/1.1\r\nHost: */
-	memcpy(http_it, " HTTP/1.1\r\nHost: ", 17);
-	http_it += 17;
+	http_it += sprintf(http_it, "%s HTTP/1.1\r\n", resource);
 
 	/* setting header field Host: */
-	memcpy(http_it, m_hostname, strlen(m_hostname));
-	http_it += strlen(m_hostname);
+	http_it += sprintf(http_it, "Host: %s\r\n", m_hostname);
 
 	/* Setting user-agent */
-	memcpy(http_it, "\r\nUser-Agent: lightWebClient 1.1.0\r\n", 36);
-	http_it += 36;
+	memcpy(http_it, "User-Agent: lightWebClient 1.1.0\r\n", 34);
+	http_it += 34;
 
 	/* Setting accept */
 	memcpy(http_it, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n", 84);
@@ -277,8 +271,8 @@ void WebClientSSL::Read(char *response, int response_length){
 	std::cerr <<  response << std::endl;	
 }
 
-int WebClientSSL::get(const char *resource, int resource_len, char *response, int response_length) {	
-	BuildHeader(resource, resource_len, nullptr, 0, GET_METHOD);
+int WebClientSSL::get(const char *resource, char *response, int response_length) {	
+	BuildHeader(resource, nullptr, 0, GET_METHOD);
 
 	std::cerr << http << std::endl;
 
@@ -291,11 +285,11 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 	return 1;
 }
 
-int WebClientSSL::post(const char *resource, int resource_len, 
+int WebClientSSL::post(const char *resource, 
 	char *response_content, int content_length, int response_length)
 {	
 
-	BuildHeader(resource, resource_len, response_content, content_length, POST_METHOD);
+	BuildHeader(resource, response_content, content_length, POST_METHOD);
 	std::cout << http << std::endl;
 	
 	Write();

@@ -31,8 +31,8 @@ public:
 	void show_certificate();
 
 	/* Executes requests get */
-	int get(const char *resource, int length, char *buff, int buff_size); 
-	int post(const char *resource, int length, char *buff, int buff_in, int buff_out); 
+	int get(const char *resource, char *buff, int buff_size); 
+	int post(const char *resource, char *buff, int buff_in, int buff_out); 
 
 	/* gets error */
 	int get_error();
@@ -51,7 +51,7 @@ private:
 	char *m_hostname;
 
 	int OpenConnection();
-	void BuildHeader(const char *resource, int length, char *buff, int buff_size, char method);
+	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
 	void Read(char *response, int response_length);
 	void Write();
 
