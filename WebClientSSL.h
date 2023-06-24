@@ -3,10 +3,14 @@
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <map>
 
 #define HTTP_LENGTH 4096 /* min 400, just for header */
 #define MAX_ADDITIONAL_HEADERS 10
 #define HTTPS_PORT 	"443"
+
+#define GET_METHOD 	1
+#define POST_METHOD 2
 
 typedef struct xtraheaders_t
 {
@@ -28,7 +32,7 @@ public:
 
 	/* Executes requests get */
 	int get(const char *resource, int length, char *buff, int buff_size); 
-	int post(const char *resource, int length, char *buff, int buff_size); 
+	int post(const char *resource, int length, char *buff, int buff_in, int buff_out); 
 
 	/* gets error */
 	int get_error();
@@ -47,9 +51,12 @@ private:
 	char *m_hostname;
 
 	int OpenConnection();
-	void BuildHeader(const char *resource, int length, char *buff, int buff_size);
+	void BuildHeader(const char *resource, int length, char *buff, int buff_size, char method);
 	void Read(char *response, int response_length);
 	void Write();
 
 };
+
+/* Utility Functions */
+int WebClient_urlencode(char *buff, std::map<const char*, const char *> cntnt);
 #endif

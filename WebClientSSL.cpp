@@ -61,7 +61,7 @@ int WebClientSSL::OpenConnection() {
 	hints.ai_protocol = IPPROTO_TCP;
 
 	if(getaddrinfo(m_hostname, HTTPS_PORT, &hints, &addrs) != 0) {
-		std::cerr << "[ERROR:] on getaddrinfo" std::endl;
+		std::cerr << "[ERROR:] on getaddrinfo." << std::endl;
 		return -4;
 	}
 
@@ -111,12 +111,17 @@ int WebClientSSL::get_error() {
 	return m_error;
 }
 
-void WebClientSSL::BuildHeader(const char *resource, int resource_len, char *content, int content_length) {
+void WebClientSSL::BuildHeader(const char *resource, int resource_len, char *content, int content_length, char method) {
 	http_it = http;
 
 	/* setting the get method */
-	memcpy(http_it, "GET ", 4);
-	http_it += 4;
+	if (method == GET_METHOD) {
+		memcpy(http_it, "GET ", 4);
+		http_it += 4;
+	} else if (method == POST_METHOD) {
+		memcpy(http_it, "POST ", 5);
+		http_it += 5;
+	}
 
 	/* setting the resource */
 	memcpy(http_it, resource, resource_len);
@@ -164,12 +169,23 @@ Sec-Fetch-User: ?1\r\n", 94);
 		http_it += m_xtraheaders[i].length;
 	}
 
+	/* Set Content-Length */
+	if (method == POST_METHOD) {
+		char cl[30];
+		sprintf(cl, "Content-Length: %d\r\n", content_length);
+		memcpy(http_it, cl, strlen(cl));
+		http_it += strlen(cl);
+	}
+
 	/* Setting Cache-Control: no-cache*/
 	memcpy(http_it, "Cache-Control: no-cache\r\n\r\n", 27);
 	http_it += 27;
 
 	/* On post, here you can add the content */
-	if (content_length == 0) return;
+	if (method == GET_METHOD) return;
+
+	memcpy(http_it, content, content_length);
+	http_it += content_length;
 }
 
 void WebClientSSL::Write() {
@@ -256,13 +272,15 @@ void WebClientSSL::Read(char *response, int response_length){
 	    /* TODO: For chunk Enconding Transfer, the timeout on poll needs
 	       to be change to a value that the network can handle. This requires 
 	       to parse the header to undestand the arrival content */
-    	poll(&m_pfd, 1, 0); /* POLLIN is set until there's no data to be read on the socket */
+    	poll(&m_pfd, 1, 10); /* POLLIN is set until there's no data to be read on the socket */
     }
 	std::cerr <<  response << std::endl;	
 }
 
 int WebClientSSL::get(const char *resource, int resource_len, char *response, int response_length) {	
-	BuildHeader(resource, resource_len, nullptr, 0);
+	BuildHeader(resource, resource_len, nullptr, 0, GET_METHOD);
+
+	std::cerr << http << std::endl;
 
 	Write();
 	if (m_error < 0) return m_error;
@@ -270,9 +288,21 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 	Read(response, response_length);
 	if (m_error < 0) return m_error;
 	
-    return 1;
+	return 1;
 }
 
+int WebClientSSL::post(const char *resource, int resource_len, char *response_content, int content_length, int response_length) {	
+	BuildHeader(resource, resource_len, response_content, content_length, POST_METHOD);
+	std::cout << http << std::endl;
+	
+	Write();
+	if (m_error < 0) return m_error;
+
+	Read(response_content, response_length);
+	if (m_error < 0) return m_error;
+	
+	return 1;
+}
 
 void WebClientSSL::set_header(const char *headerfield, int length) {
 	/* TODO: 
@@ -291,4 +321,16 @@ WebClientSSL::~WebClientSSL() {
 	SSL_free(m_ssl);
 	close(m_fd);
 	SSL_CTX_free(m_ctx);
+}
+
+
+/* Utility functions */
+int WebClient_urlencode(char *buff, std::map<const char *, const char*> cntnt) {
+	std::map<const char *, const char *>::iterator it = cntnt.begin();
+
+	while(it != cntnt.end()){
+		std::cout << "Key: " << it->first << ", value: " << it->second << std::endl;
+		++it;
+	}
+	return 1;
 }
