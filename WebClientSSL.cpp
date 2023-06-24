@@ -291,7 +291,10 @@ int WebClientSSL::get(const char *resource, int resource_len, char *response, in
 	return 1;
 }
 
-int WebClientSSL::post(const char *resource, int resource_len, char *response_content, int content_length, int response_length) {	
+int WebClientSSL::post(const char *resource, int resource_len, 
+	char *response_content, int content_length, int response_length)
+{	
+
 	BuildHeader(resource, resource_len, response_content, content_length, POST_METHOD);
 	std::cout << http << std::endl;
 	
@@ -317,7 +320,9 @@ void WebClientSSL::set_header(const char *headerfield, int length) {
 
 WebClientSSL::~WebClientSSL() {
 	m_error = SSL_shutdown(m_ssl);
-    if (m_error < 0) std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
+	if (m_error < 0) 
+		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
+	
 	SSL_free(m_ssl);
 	close(m_fd);
 	SSL_CTX_free(m_ctx);
@@ -327,10 +332,42 @@ WebClientSSL::~WebClientSSL() {
 /* Utility functions */
 int WebClient_urlencode(char *buff, std::map<const char *, const char*> cntnt) {
 	std::map<const char *, const char *>::iterator it = cntnt.begin();
+	char *buff_it = buff;
 
 	while(it != cntnt.end()){
-		std::cout << "Key: " << it->first << ", value: " << it->second << std::endl;
-		++it;
+		
+		// copying key
+		buff_it += sprintf(buff_it, "%s=", it->first);
+
+		// encoding value
+		while(*it->second != 0) {
+			// std::cout << it->second << std::endl;
+			if (*it->second == ' ') { /* space is enconde as '+'' in URI (after the?)*/
+				*buff_it = '+';
+
+			} else if (*it->second == 0x0A) { /* backslash */
+				buff_it += sprintf(buff_it, "%%0%X", 10) - 1; 
+
+			} else if ((*it->second > 0x20 && *it->second < 0x30) ||
+				(*it->second > 0x39 && *it->second < 0x41) || 
+				(*it->second > 0x5A && *it->second < 0x61) ||
+				(*it->second > 0x7A)) {				
+				buff_it += sprintf(buff_it, "%%%X", *it->second) - 1; 
+
+			} else {
+				*buff_it = *it->second;
+
+			}
+
+			it->second++;
+			buff_it++;
+		}
+
+		*buff_it = '&';
+		buff_it++;
+		it++;
 	}
-	return 1;
+	*(buff_it - 1) = '\0';
+
+	return buff_it - buff - 1;
 }
