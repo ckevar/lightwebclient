@@ -41,7 +41,7 @@ int main(int argc, char const *argv[])
 
 
 	sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
-	webClient.set_header("Content-Type: application/x-www-form-urlencoded\r\n", 49);
+	webClient.set_header("Content-Type: application/x-www-form-urlencoded");
 	int buff_in = WebClient_urlencode(buff, content);
 	webClient.post(resource, buff, buff_in, buff_size);
 	

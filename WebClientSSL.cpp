@@ -130,7 +130,7 @@ void WebClientSSL::BuildHeader(const char *resource, char *content, int content_
 	http_it += sprintf(http_it, "Host: %s\r\n", m_hostname);
 
 	/* Setting user-agent */
-	memcpy(http_it, "User-Agent: lightWebClient 1.1.0\r\n", 34);
+	memcpy(http_it, USER_AGENT_HEADER, 34);
 	http_it += 34;
 
 	/* Setting accept */
@@ -142,7 +142,7 @@ void WebClientSSL::BuildHeader(const char *resource, char *content, int content_
 	http_it += 33;
 
 	/* setting enconding, IMPORTATNT by default
-	 it only accepts deflate */
+	 it only accepts deflate ... yet*/
 	memcpy(http_it, "Accept-Encoding: deflate\r\n", 26);
 	http_it += 26;
 
@@ -159,23 +159,24 @@ Sec-Fetch-User: ?1\r\n", 94);
 
 	/* the xtra header is add */
 	for (int i = 0; i < xtraheaders_i; ++i) {
-		memcpy(http_it, m_xtraheaders[i].header, m_xtraheaders[i].length);
-		http_it += m_xtraheaders[i].length;
+		http_it += sprintf(http_it, "%s\r\n", m_xtraheaders[i]);
 	}
 
 	/* Set Content-Length */
 	if (method == POST_METHOD) {
-		char cl[30];
-		sprintf(cl, "Content-Length: %d\r\n", content_length);
-		memcpy(http_it, cl, strlen(cl));
-		http_it += strlen(cl);
+		http_it += sprintf(http_it, "Content-Length: %d\r\n", content_length);
 	}
 
 	/* Setting Cache-Control: no-cache*/
 	memcpy(http_it, "Cache-Control: no-cache\r\n\r\n", 27);
 	http_it += 27;
 
-	/* On post, here you can add the content */
+	/* 
+		On post, here you can add the content, some say that 
+		GET_METHOD cannot carry a content, and some say it means
+		GET should not and that does not meant it cannot. You 
+		can modify this as you wish. 
+	*/
 	if (method == GET_METHOD) return;
 
 	memcpy(http_it, content, content_length);
@@ -203,10 +204,14 @@ void WebClientSSL::Write() {
 void WebClientSSL::Read(char *response, int response_length){
 	char *response_i = response;
 	struct pollfd m_pfd;
+	char isHeader = 1;
+	char isTransferEnconding = 0;
+	int timeout = -1;
+
 	m_pfd.fd = m_fd;
 	m_pfd.events = POLLIN;
 
-	poll(&m_pfd, 1, -1);
+	poll(&m_pfd, 1, timeout);
 
 	while(m_pfd.revents == POLLIN) {	
 		m_error = SSL_read(m_ssl, response_i, response_length);
@@ -228,11 +233,11 @@ void WebClientSSL::Read(char *response, int response_length){
 
 			else if (m_error == SSL_ERROR_WANT_WRITE)
 				std::cerr << "Want to write." << std::endl;
-    		
+			
 			else if (m_error == SSL_ERROR_WANT_CONNECT)
 				std::cerr << "Want to connect." << std::endl;
 
-    		else if (m_error == SSL_ERROR_WANT_ACCEPT)
+			else if (m_error == SSL_ERROR_WANT_ACCEPT)
 				std::cerr << "Want to accept." << std::endl;
 
 			else if (m_error == SSL_ERROR_WANT_X509_LOOKUP)
@@ -243,31 +248,55 @@ void WebClientSSL::Read(char *response, int response_length){
 				if (ERR_get_error() == 0) {
 					std::cerr << " EOF, no error." << std::endl;
 					break;
-    			}
-    			std::cerr << "Something went wrong." << std::endl;
-    		}
+				}
+				std::cerr << "Something went wrong." << std::endl;
+			}
 
-    		else if (m_error == SSL_ERROR_SSL)
-    			std::cerr << "SSL" << std::endl;
-    		m_error = -7;
-	    	return;
-	    }
-	    response_i += m_error;
-	    response_length -= m_error;
+			else if (m_error == SSL_ERROR_SSL)
+				std::cerr << "SSL" << std::endl;
+			m_error = -7;
+			return;
+		}
+	    // Search for "Transfer-Encoding:"
+		if (isHeader) {
+			for (int i = 0; i < m_error; i++) {
+				if (response_i[i] == 'T') {
+					if (response_i[i + 15] == 'n' &&
+						response_i[i + 16] == 'g' && 
+						response_i[i + 17] == ':') 
+					{
+						if (memcmp(response_i + i + 19, "chunked", 7) == 0) {
+							isTransferEnconding = TRANSFER_ENCODING_CHUNCKED;
+						}
+					}
+				} /* Headers ends here */
+				else if (response_i[i] == 10 && 
+						response_i[i + 2] == 10) {
+					isHeader = 0;
+					break;
+				}
+			}
+		}
 
-	    if (response_length == 0) 
-	    	std::cerr << "[WARNING:] Buffer size might be too small" << std::endl;
+		response_i += m_error;
+		response_length -= m_error;
 
-	    else if (response_length < 0) {
-	    	std::cerr << "[WARNING:] Buffer size is too small" << std::endl;
-	    	m_error = -8;
-	    	return;
-	    }
-	    /* TODO: For chunk Enconding Transfer, the timeout on poll needs
-	       to be change to a value that the network can handle. This requires 
-	       to parse the header to undestand the arrival content */
-    	poll(&m_pfd, 1, 10); /* POLLIN is set until there's no data to be read on the socket */
-    }
+		if (response_length == 0) 
+			std::cerr << "[WARNING:] Buffer size might be too small" << std::endl;
+
+		else if (response_length < 0) {
+			std::cerr << "[WARNING:] Buffer size is too small" << std::endl;
+			m_error = -8;
+			return;
+		}
+		/* 	
+			TODO: For chunk Enconding Transfer, the timeout on poll needs
+			to be change to a value that the network can handle. This requires 
+			to parse the header to undestand the arrival content
+		*/
+		timeout = isTransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 10 : 0;
+		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
+	}
 	std::cerr <<  response << std::endl;	
 }
 
@@ -301,14 +330,11 @@ int WebClientSSL::post(const char *resource,
 	return 1;
 }
 
-void WebClientSSL::set_header(const char *headerfield, int length) {
+void WebClientSSL::set_header(const char *headerfield) {
 	/* TODO: 
 	- block adding headers such as Sec-Fetch-Mode, Sec-Fetch-Site, Sec-Fetch-User
 	*/
-	std::cout << "set header" << std::endl;
-	m_xtraheaders[xtraheaders_i].header = (char *)headerfield;
-	m_xtraheaders[xtraheaders_i].length = length;
-	std::cout << m_xtraheaders[xtraheaders_i].header << std::endl;
+	m_xtraheaders[xtraheaders_i] = (char *)headerfield;
 	xtraheaders_i++;
 }
 

@@ -11,12 +11,9 @@
 
 #define GET_METHOD 	1
 #define POST_METHOD 2
+#define TRANSFER_ENCODING_CHUNCKED 1
 
-typedef struct xtraheaders_t
-{
-	char *header;
-	int length;
-} xtraheaders_t;
+#define USER_AGENT_HEADER "User-Agent: lightWebClient 1.1.0\r\n"
 
 
 class WebClientSSL
@@ -25,7 +22,7 @@ public:
 	WebClientSSL(const char *host);
 
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
-	void set_header(const char *header_field, int length);
+	void set_header(const char *header_field);
 
 	/* std::couts the server certificate */
 	void show_certificate();
@@ -38,17 +35,18 @@ public:
 	int get_error();
 	~WebClientSSL();
 private:
-	char http[HTTP_LENGTH];
-	char *http_it;
-	xtraheaders_t m_xtraheaders[MAX_ADDITIONAL_HEADERS];
-	int xtraheaders_i;
-	// char *xtraheaders[MAX_ADDITIONAL_HEADERS];
-	// int xtraheaders_lengths[MAX_ADDITIONAL_HEADERS]
 	int m_error;
 	int m_fd;
+
+	char http[HTTP_LENGTH];
+	char *http_it;
+
+	char *m_hostname;
+	char *m_xtraheaders[MAX_ADDITIONAL_HEADERS];
+	int xtraheaders_i;
+
 	SSL_CTX *m_ctx;
 	SSL *m_ssl;
-	char *m_hostname;
 
 	int OpenConnection();
 	void BuildHeader(const char *resource, char *buff, int buff_size, char method);

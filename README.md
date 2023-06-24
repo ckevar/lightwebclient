@@ -4,7 +4,7 @@ It's a small web client impleted in C/C++ that supports basic websites, meaning:
 - Supports HTTP/1.1, doesnt't support HTTP/2 or HTTP/3.
 - Supports deflated enconding, doesn't support gzip neither br.
 - Supports get and post method only, check under folder examples.
-- Supports a function to enconde x-www-form-urlenconded through c++, see example/x-form-urlencode.cpp:
+- Supports x-www-form-urlenconded encoding by a function WebClient_urlencode through c++, see example/x-form-urlencode.cpp:
 ```c++
 std::map<const char *, const char*>
 ```

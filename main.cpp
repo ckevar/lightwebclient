@@ -30,9 +30,9 @@ int main(int argc, char const *argv[])
 	if(webClient.get_error() < 0)
 		return -1;
 
-	char resource[100];
-	int buff_size = 2*BUFFSIZE_API_TELEGRAM_ORG_GET_ME;
-	char buff[2*BUFFSIZE_API_TELEGRAM_ORG_GET_ME];
+	// char resource[100];
+	// int buff_size = 2*BUFFSIZE_API_TELEGRAM_ORG_GET_ME;
+	// char buff[2*BUFFSIZE_API_TELEGRAM_ORG_GET_ME];
 
 	std::map<const char *, const char*> content;
 	content["parse_mode"] = "HTML";
@@ -40,10 +40,10 @@ int main(int argc, char const *argv[])
 	content["text"] = "test test?, <b>test</b>\ntest";
 
 
-	sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
-	webClient.set_header("Content-Type: application/x-www-form-urlencoded\r\n", 49);
-	int buff_in = WebClient_urlencode(buff, content);
-	webClient.post(resource, buff, buff_in, buff_size);
+	// sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
+	// webClient.set_header("Content-Type: application/x-www-form-urlencoded");
+	// int buff_in = WebClient_urlencode(buff, content);
+	// webClient.post(resource, buff, buff_in, buff_size);
 
 	/* EXAMPLES */
 	// sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
@@ -58,9 +58,11 @@ int main(int argc, char const *argv[])
 	// sprintf(resource, "/bot%s/sendMessage", TG_TOKEN);
 	// memcpy(resource + TG_TOKEN_LEN + 16, "?parse_mode=HTML&text=test+test%3F%2C+%3Cb%3Etest%3C%2Fb%3E&chat_id=TELEGRAM_CHAT_ID", 77);
 	// webClient.get(resource, TG_TOKEN_LEN + 16 + 77, buff, buff_size);
+
+	int buff_size = 2*BUFFSIZE_WWW_GOOGLE_COM;
+	char buff[2*BUFFSIZE_WWW_GOOGLE_COM];
 	
-	// sprintf(resource, "/", TG_TOKEN);
-	// webClient.get("/", 1, buff, buff_size);
+	webClient.get("/", buff, buff_size);
 
 	return 0;
 }
