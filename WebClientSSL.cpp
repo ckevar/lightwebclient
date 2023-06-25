@@ -158,14 +158,12 @@ Sec-Fetch-User: ?1\r\n", 94);
 	http_it += 94;
 
 	/* the xtra header is add */
-	for (int i = 0; i < xtraheaders_i; ++i) {
+	for (int i = 0; i < xtraheaders_i; ++i)
 		http_it += sprintf(http_it, "%s\r\n", m_xtraheaders[i]);
-	}
 
 	/* Set Content-Length */
-	if (method == POST_METHOD) {
+	if (method == POST_METHOD)
 		http_it += sprintf(http_it, "Content-Length: %d\r\n", content_length);
-	}
 
 	/* Setting Cache-Control: no-cache*/
 	memcpy(http_it, "Cache-Control: no-cache\r\n\r\n", 27);
@@ -181,6 +179,7 @@ Sec-Fetch-User: ?1\r\n", 94);
 
 	memcpy(http_it, content, content_length);
 	http_it += content_length;
+
 }
 
 void WebClientSSL::Write() {
@@ -201,12 +200,52 @@ void WebClientSSL::Write() {
     }
 }
 
+char WebClientSSL::HeaderParser(char *response_i) {
+	if (response_i[5] == '2') {
+		m_error = -8;
+		std::cerr << "[ERROR:] HTTP/2 No supported" << std::endl;
+		return -1;
+	}
+	if (responseHeader.status == 0)
+		sscanf(response_i + 9, "%hu", &responseHeader.status);
+
+	for (int i = 0; i < m_error; i++) {
+		/* Parse for "Transfer-Encoding:" */
+		if (response_i[i] == 'T') {
+			if (response_i[i + 15] == 'n' &&
+				response_i[i + 16] == 'g' && 
+				response_i[i + 17] == ':') 
+			{
+				if (memcmp(response_i + i + 19, "chunked", 7) == 0)
+					responseHeader.TransferEnconding = TRANSFER_ENCODING_CHUNCKED;
+			}
+		}	 
+		/* Parse for "Content-Length:" */
+		else if (response_i[i] == 'C') {
+			if (response_i[i + 12] == 't' &&
+				response_i[i + 13] == 'h' && 
+				response_i[i + 14] == ':'){
+					sscanf(response_i + i + 16, "%hd", &responseHeader.ContentLength);
+			}
+		}
+		/* Headers ends here */
+		else if (response_i[i] == 10 && 
+			response_i[i + 2] == 10) {
+				return 0;
+			}
+	}
+	return 1;
+}
+
 void WebClientSSL::Read(char *response, int response_length){
 	char *response_i = response;
 	struct pollfd m_pfd;
 	char isHeader = 1;
-	char isTransferEnconding = 0;
 	int timeout = -1;
+
+	responseHeader.TransferEnconding = 0; 	/* No Transfer Enconde Field*/
+	responseHeader.ContentLength = -1; 		/* No Content Length */
+	responseHeader.status = 0;
 
 	m_pfd.fd = m_fd;
 	m_pfd.events = POLLIN;
@@ -257,44 +296,26 @@ void WebClientSSL::Read(char *response, int response_length){
 			m_error = -7;
 			return;
 		}
-	    // Search for "Transfer-Encoding:"
 		if (isHeader) {
-			for (int i = 0; i < m_error; i++) {
-				if (response_i[i] == 'T') {
-					if (response_i[i + 15] == 'n' &&
-						response_i[i + 16] == 'g' && 
-						response_i[i + 17] == ':') 
-					{
-						if (memcmp(response_i + i + 19, "chunked", 7) == 0) {
-							isTransferEnconding = TRANSFER_ENCODING_CHUNCKED;
-						}
-					}
-				} /* Headers ends here */
-				else if (response_i[i] == 10 && 
-						response_i[i + 2] == 10) {
-					isHeader = 0;
-					break;
-				}
-			}
+			isHeader = HeaderParser(response_i);
+			if (isHeader < 0) return;
 		}
 
 		response_i += m_error;
 		response_length -= m_error;
 
 		if (response_length == 0) 
-			std::cerr << "[WARNING:] Buffer size might be too small" << std::endl;
+			std::cerr << "[WARNING:] Buffer size might be too small." << std::endl;
 
 		else if (response_length < 0) {
-			std::cerr << "[WARNING:] Buffer size is too small" << std::endl;
+			std::cerr << "[WARNING:] Buffer size is too small." << std::endl;
 			m_error = -8;
 			return;
 		}
 		/* 	
-			TODO: For chunk Enconding Transfer, the timeout on poll needs
-			to be change to a value that the network can handle. This requires 
-			to parse the header to undestand the arrival content
+			TODO: Find a way to compute the timeout for the chunks
 		*/
-		timeout = isTransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 10 : 0;
+		timeout = responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 50 : 0;
 		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
 	}
 	std::cerr <<  response << std::endl;	
@@ -319,7 +340,7 @@ int WebClientSSL::post(const char *resource,
 {	
 
 	BuildHeader(resource, response_content, content_length, POST_METHOD);
-	std::cout << http << std::endl;
+	// std::cout << http << std::endl;
 	
 	Write();
 	if (m_error < 0) return m_error;

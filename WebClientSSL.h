@@ -15,6 +15,12 @@
 
 #define USER_AGENT_HEADER "User-Agent: lightWebClient 1.1.0\r\n"
 
+typedef struct ResponseHeader
+{
+	char TransferEnconding;
+	short ContentLength;
+	unsigned short status;
+} ResponseHeader;
 
 class WebClientSSL
 {
@@ -44,12 +50,14 @@ private:
 	char *m_hostname;
 	char *m_xtraheaders[MAX_ADDITIONAL_HEADERS];
 	int xtraheaders_i;
+	ResponseHeader responseHeader;
 
 	SSL_CTX *m_ctx;
 	SSL *m_ssl;
 
 	int OpenConnection();
 	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
+	char HeaderParser(char *response_i);
 	void Read(char *response, int response_length);
 	void Write();
 

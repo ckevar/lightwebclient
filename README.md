@@ -8,9 +8,9 @@ It's a small web client impleted in C/C++ that supports basic websites, meaning:
 ```c++
 std::map<const char *, const char*>
 ```
+- Supports partially "Transfer-Encoding: chunked"
 - Doesn't support 301, forwarding
-- Doesn't support "Transfer-Encoding: chunked"
-- Doesn't no support "Content-Length" on response headers, so, the buff size has to be determined by trial-and-error.
+- Doesn't no support "Content-Length:" on response headers, so, the buff size has to be determined by trial-and-error.
 - Doesn't use malloc either.
 - Doesn't support header response handling.
 - Doesn't support application/json
@@ -31,7 +31,10 @@ make main
 - *getExample.cpp* after compiling it, you can test it with www.google.com as you may have read, certain web sites such as google have a chuck type transfer encoding, something this lightWebClient isn't yet capable of handle, so that's why if you know (it comes in the response header of the site you're browsing) you can modify the poll line
 
 - *post.cpp* this performs a post on api.telegram.org with the query on the URL
+
 - *post_x-form.cpp* Performs a post on api.telegram.org with the query on the content, that's why the header field "Content-Type: application/x-www-form-urlencoded\r\n" is addded.
+
+- *x-form-urlenconde.cpp* Performs a post using a WebClient_urlencode to enconde query-like requestes. The enconder was not fully tested. The enconders is based on std::map <const char*, const char *>
 
 ## Buffer Size recommended
 |Web|Buffer Size (char)|REST Method|
