@@ -36,6 +36,8 @@ make main
 
 - *x-form-urlenconde.cpp* Performs a post using a WebClient_urlencode to enconde query-like requestes. The enconder was not fully tested. The enconders is based on std::map <const char*, const char *>
 
+- *tgbotsendmessage.cpp* Sends a message to your telegram API. PAY ATTENTION, this DOES NOT LISTEN arriving messages, if you have the chat_id you can send messages.
+
 ## Buffer Size recommended
 |Web|Buffer Size (char)|REST Method|
 |-|-|-|

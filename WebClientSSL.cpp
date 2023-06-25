@@ -315,7 +315,7 @@ void WebClientSSL::Read(char *response, int response_length){
 		/* 	
 			TODO: Find a way to compute the timeout for the chunks
 		*/
-		timeout = responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 50 : 0;
+		timeout = responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 50 : 10;
 		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
 	}
 	std::cerr <<  response << std::endl;	
@@ -359,6 +359,11 @@ void WebClientSSL::set_header(const char *headerfield) {
 	xtraheaders_i++;
 }
 
+void WebClientSSL::show_request_headers() {
+	std::cerr << "BEGIN BREQUEST ->>" << std::endl;
+	std::cerr << http << std::endl;
+	std::cerr << "END BREQUEST -<<" << std::endl;
+}
 WebClientSSL::~WebClientSSL() {
 	m_error = SSL_shutdown(m_ssl);
 	if (m_error < 0) 

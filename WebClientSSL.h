@@ -30,6 +30,9 @@ public:
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
 
+	/* Get request header*/
+	void show_request_headers();
+
 	/* std::couts the server certificate */
 	void show_certificate();
 
