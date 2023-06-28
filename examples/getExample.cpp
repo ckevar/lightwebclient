@@ -6,14 +6,6 @@
 #include "apikeys.h"
 #include "BufferSizes.h"
 
-/* If you know that  the transmision enconding is by chuncks, like www.google.com
-   Modify the following line on WebClientSSL.cpp, it's close to the end
-	poll(&m_pfd, 1, 0);
-	change as:
-	poll(&m_pfd, 1, 10);
-	I'm working on this
-*/
-
 int main(int argc, char const *argv[])
 {
 	if (argc < 2) {

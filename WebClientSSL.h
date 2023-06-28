@@ -19,6 +19,8 @@ typedef struct ResponseHeader
 {
 	char TransferEnconding;
 	short ContentLength;
+	char *Cookie;
+	int Cookie_size;
 	unsigned short status;
 	int size;
 } ResponseHeader;
@@ -47,6 +49,8 @@ public:
 
 	/* gets error */
 	int get_error();
+	void new_session(const char *host);
+	void terminate_session();
 	~WebClientSSL();
 private:
 	int m_error;

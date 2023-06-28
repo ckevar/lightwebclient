@@ -9,6 +9,8 @@ It's a small web client impleted in C/C++ that supports basic websites, meaning:
 std::map<const char *, const char*>
 ```
 - Supports partially "Transfer-Encoding: chunked"
+- Supports getting Cooking from header and the coockie size (amount of bytes the cookie has).
+- It supports session, meaning, after the object webclient is created, it's linked to the given host, the same object can be linked later to another host by terminating the session with WebClientSSL.terminate_session(). This doesn't not free the CTX created by OpenSSL, it only frees the SSL. The new session where the CTX is linked to another host can be started by WebClientSSL.new_session("ANOTHER.HOST.COM").
 - Doesn't support 301, forwarding
 - Doesn't no support "Content-Length:" on response headers, so, the buff size has to be determined by trial-and-error.
 - Doesn't use malloc either.

@@ -16,36 +16,41 @@
 WebClientSSL::WebClientSSL(const char *host) {
 
 	/* Init SSL */
-	xtraheaders_i = 0;
 
-	m_hostname = (char *) host;
 
 	OpenSSL_add_all_algorithms(); // load & register all cryptos
 	SSL_load_error_strings();
+
 	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */
 	m_ctx = SSL_CTX_new(method);
-    
-	if (m_ctx != nullptr) {
-		m_ssl = SSL_new(m_ctx);
-		if (m_ssl != nullptr) {
-			SSL_set_tlsext_host_name(m_ssl, m_hostname);
-			m_error = OpenConnection(); /* defines m_fd */
-			if (m_error == 0) {
-				SSL_set_fd(m_ssl, m_fd);
-				m_error = SSL_connect(m_ssl);
-    		}
-		}
-		else {
-			std::cerr << "[ERROR:] SSL_new returned nullptr." << std::endl;
-			m_error = -2;
-		}
-    } 
-    else {
-    	std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
+	
+	if (m_ctx != nullptr) 
+		new_session(host);
+	else {
+		std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
 		m_error = -1;
-    }
+	}
 }
 
+void WebClientSSL::new_session(const char *host) {
+	xtraheaders_i = 0;
+	m_hostname = (char *) host;
+
+	m_ssl = SSL_new(m_ctx);
+	if (m_ssl != nullptr) {
+
+		SSL_set_tlsext_host_name(m_ssl, m_hostname);
+		m_error = OpenConnection(); /* defines m_fd */
+		if (m_error == 0) {
+			SSL_set_fd(m_ssl, m_fd);
+			m_error = SSL_connect(m_ssl);
+		}
+	}
+	else {
+		std::cerr << "[ERROR:] SSL_new returned nullptr." << std::endl;
+		m_error = -2;
+	}
+}
 
 int WebClientSSL::OpenConnection() {
 	struct hostent *host;
@@ -228,12 +233,23 @@ char WebClientSSL::HeaderParser(char *response_i) {
 					sscanf(response_i + i + 16, "%hd", &responseHeader.ContentLength);
 			}
 		}
+		/* Get Set-cookie: */
+		else if (response_i[i] == 'S' || response_i[i] == 's') {
+			if (response_i[i + 8] == 'i' &&
+				response_i[i + 9] == 'e' &&
+				response_i[i + 10] == ':') {
+				responseHeader.Cookie = response_i + i + 12;
+				while (response_i[i] != '\r') i++;
+				responseHeader.Cookie_size = response_i + i + 12 - responseHeader.Cookie;
+				std::cerr << responseHeader.Cookie_size << std::endl;
+			}
+		}
 		/* Headers ends here */
 		else if (response_i[i] == 10 && 
 			response_i[i + 2] == 10) {
 				responseHeader.size += i + 2;
 				return 0;
-			}
+		}
 	}
 	responseHeader.size += m_error;
 	return 1;
@@ -331,8 +347,7 @@ int WebClientSSL::Read(char *response, int response_length){
 
 int WebClientSSL::get(const char *resource, char *response, int response_length) {	
 	BuildHeader(resource, nullptr, 0, GET_METHOD);
-
-	std::cerr << http << std::endl;
+	// std::cerr << http << std::endl;
 
 	Write();
 	if (m_error < 0) return m_error;
@@ -370,15 +385,26 @@ void WebClientSSL::show_request_headers() {
 	std::cerr << http << std::endl;
 	std::cerr << "END BREQUEST -<<" << std::endl;
 }
-WebClientSSL::~WebClientSSL() {
+
+void WebClientSSL::terminate_session() {
 	m_error = SSL_shutdown(m_ssl);
+	if (m_error < 0) 
+		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
+	SSL_free(m_ssl);
+	close(m_fd);
+}
+
+WebClientSSL::~WebClientSSL() {
+	/*m_error = SSL_shutdown(m_ssl);
 	if (m_error < 0) 
 		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
 	
 	SSL_free(m_ssl);
-	close(m_fd);
+	close(m_fd); */
+	terminate_session();
 	SSL_CTX_free(m_ctx);
 }
+
 
 
 /* Utility functions */
