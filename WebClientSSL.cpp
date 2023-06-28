@@ -211,7 +211,7 @@ char WebClientSSL::HeaderParser(char *response_i) {
 
 	for (int i = 0; i < m_error; i++) {
 		/* Parse for "Transfer-Encoding:" */
-		if (response_i[i] == 'T') {
+		if (response_i[i] == 'T' || response_i[i] == 't') {
 			if (response_i[i + 15] == 'n' &&
 				response_i[i + 16] == 'g' && 
 				response_i[i + 17] == ':') 
@@ -221,7 +221,7 @@ char WebClientSSL::HeaderParser(char *response_i) {
 			}
 		}	 
 		/* Parse for "Content-Length:" */
-		else if (response_i[i] == 'C') {
+		else if (response_i[i] == 'C' || response_i[i] == 'c') {
 			if (response_i[i + 12] == 't' &&
 				response_i[i + 13] == 'h' && 
 				response_i[i + 14] == ':'){
@@ -231,13 +231,15 @@ char WebClientSSL::HeaderParser(char *response_i) {
 		/* Headers ends here */
 		else if (response_i[i] == 10 && 
 			response_i[i + 2] == 10) {
+				responseHeader.size += i + 2;
 				return 0;
 			}
 	}
+	responseHeader.size += m_error;
 	return 1;
 }
 
-void WebClientSSL::Read(char *response, int response_length){
+int WebClientSSL::Read(char *response, int response_length){
 	char *response_i = response;
 	struct pollfd m_pfd;
 	char isHeader = 1;
@@ -246,6 +248,7 @@ void WebClientSSL::Read(char *response, int response_length){
 	responseHeader.TransferEnconding = 0; 	/* No Transfer Enconde Field*/
 	responseHeader.ContentLength = -1; 		/* No Content Length */
 	responseHeader.status = 0;
+	responseHeader.size = 0;
 
 	m_pfd.fd = m_fd;
 	m_pfd.events = POLLIN;
@@ -293,14 +296,18 @@ void WebClientSSL::Read(char *response, int response_length){
 
 			else if (m_error == SSL_ERROR_SSL)
 				std::cerr << "SSL" << std::endl;
-			m_error = -7;
-			return;
+			return -7;
 		}
 		if (isHeader) {
 			isHeader = HeaderParser(response_i);
-			if (isHeader < 0) return;
+			if (isHeader < 0) return -8;
 		}
 
+		if (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) {
+			timeout = 50;
+		} else {
+			timeout = 0;
+		}
 		response_i += m_error;
 		response_length -= m_error;
 
@@ -309,16 +316,17 @@ void WebClientSSL::Read(char *response, int response_length){
 
 		else if (response_length < 0) {
 			std::cerr << "[WARNING:] Buffer size is too small." << std::endl;
-			m_error = -8;
-			return;
+			return -9;
 		}
 		/* 	
 			TODO: Find a way to compute the timeout for the chunks
 		*/
-		timeout = responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED ? 50 : 10;
+		timeout = (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) ? 50 : 0;
 		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
 	}
-	std::cerr <<  response << std::endl;	
+
+	return response_i - response;
+	// std::cerr <<  response << std::endl;
 }
 
 int WebClientSSL::get(const char *resource, char *response, int response_length) {	
@@ -329,10 +337,8 @@ int WebClientSSL::get(const char *resource, char *response, int response_length)
 	Write();
 	if (m_error < 0) return m_error;
 
-	Read(response, response_length);
-	if (m_error < 0) return m_error;
-	
-	return 1;
+	m_error = Read(response, response_length);
+	return m_error;
 }
 
 int WebClientSSL::post(const char *resource, 
@@ -345,10 +351,10 @@ int WebClientSSL::post(const char *resource,
 	Write();
 	if (m_error < 0) return m_error;
 
-	Read(response_content, response_length);
+	int readBytes = Read(response_content, response_length);
 	if (m_error < 0) return m_error;
 	
-	return 1;
+	return readBytes;
 }
 
 void WebClientSSL::set_header(const char *headerfield) {

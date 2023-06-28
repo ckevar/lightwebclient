@@ -36,12 +36,13 @@ int main(int argc, char const *argv[])
 	unsigned short buff_size = 20000;
 	char buff[buff_size];
 	char Api_Key[MDB_TOKEN_LEN + 9];
+
 	sprintf(Api_Key, "Api-Key: %s",MDB_TOKEN);
 
 	webClient.set_header("Content-Type: application/json");
 	webClient.set_header(Api_Key);
 
-	unsigned short buff_in = sprintf(buff, "{\
+	unsigned short buff_io = sprintf(buff, "{\
 \"dataSource\":\"hpt\",\
 \"collection\":\"%s\",\
 \"database\":\"warehouse\",\
@@ -49,7 +50,113 @@ int main(int argc, char const *argv[])
 \"tag\":\"%s\"\
 }}", collection, itemTag);
 
-	webClient.post("/app/data-esgfv/endpoint/data/v1/action/findOne", buff, buff_in, buff_size);
+	buff_io = webClient.post("/app/data-esgfv/endpoint/data/v1/action/findOne", buff, buff_io, buff_size);
+	if (buff_io <= 0) {
+		std::cerr << "[ERROR:] nothing was return from server" << std::endl;
+		return buff_io;
+	}
+
+	char *buff_it = buff + webClient.responseHeader_size() + 1;
+
+	/* check if replied  document is null or not */
+	while(buff_it < (buff + buff_io)) {
+		if (*buff_it == '\"') {
+			if (memcmp(buff_it, "\"document\":", 11) == 0) {
+				buff_it += 11;
+				if (memcmp(buff_it, "null", 4) == 0) {
+					std::cerr << "[ERROR:MDB:] document null" << std::endl;
+					return 1;
+				}
+				else
+					break;
+			} 
+		}
+		buff_it++;
+	}
+	if(buff_it >= (buff + buff_io)) {
+		std::cerr << "[ERROR:] no document field was found" << std::endl;
+	}
+
+	/* Get Phones numbers reservations from HostelWORLD */
+	std::cerr << buff_it << std::endl;
+	// char *PhoneNumber[35]; 
+	// char *resourceName[35];
+	// char *reservationCode[35]; 
+	// char **PhoneNumber_it = PhoneNumber; 
+	// char **resourceName_it = resourceName; 
+	// char **reservationCode_it = reservationCode; 
+	// char *PhoneNumber_tmp;
+	// char isHostelworldGuest = 0;
+
+	// while(buff_it < (buff + buff_io)) {
+	// 	if(*buff_it == '\"') {
+	// 		buff_it++;
+	// 		if (*buff_it == 'p') {
+	// 			if (memcmp(buff_it, "phoneNumbers\":[{\"value\":", 24) == 0) {
+	// 				buff_it += 24;
+	// 				PhoneNumber_tmp = buff_it;
+	// 				while(*buff_it != ',') buff_it++;
+	// 				*buff_it = 0;
+	// 			} 
+	// 		}
+	// 		else if (*buff_it == 'B') {
+	// 			if (memcmp(buff_it, "BookingMethodId\",\"value\":\"2\"", 28) == 0) {
+	// 				buff_it += 28;
+	// 				while(*buff_it != ',') buff_it++;
+	// 				*buff_it = 0;
+	// 				*PhoneNumber_it = PhoneNumber_tmp;
+	// 				PhoneNumber_it++;
+	// 				isHostelworldGuest = 1;
+	// 			}
+	// 		}
+	// 		else if (*buff_it == 'R') {
+	// 			if (memcmp(buff_it, "ReservationCode\",\"value\":", 25) == 0 && isHostelworldGuest) {
+	// 				buff_it += 25;
+	// 				*reservationCode_it = buff_it;
+	// 				while(*buff_it != ',' && *buff_it != '}') buff_it++;
+	// 				*buff_it = 0;
+	// 				std::cerr << *reservationCode_it << std::endl;
+	// 			}
+	// 		}
+	// 		else if (*buff_it == 'r') {
+	// 			// std::cerr << buff_it << std::endl;
+	// 			if (memcmp(buff_it, "resourceName\":", 14) == 0 && isHostelworldGuest) {
+	// 				buff_it += 14;
+	// 				*resourceName_it = buff_it;
+	// 				while(*buff_it != ',' && *buff_it != '}') buff_it++;
+	// 				*buff_it = 0;
+	// 				std::cerr << *resourceName_ << std::endl;
+	// 				isHostelworldGuest = 0;
+	// 			}
+	// 		}
+	// 	}
+	// 	buff_it++;
+	// }
+
+
+	// int obect = 0;
+	// int array = 0;
+	// std::cerr << buff_it << std::endl;
+	// do {
+	// 	if (*buff_it == '{') object++;
+	// 	else if (*buff_it == '}') object--;
+	// 	if (object == 0) break;
+
+	// 	if (*buff_it == '[') array++;
+	// 	else if (*buff_it == ']') array--;
+
+	// 	if (object == 2) {
+	// 		if (*buff_it == '\"' && *(buff_it + 1) == 'g') {
+	// 			if (memcmp(*buff_it + 1, "guest", 5) == 0) {
+	// 				on guests = 1;
+	// 			}
+	// 		}
+	// 	}
+
+	// 	buff_it++;
+
+	// } while(1)
+
 	// webClient.show_request_headers();
 	return 0;
 }

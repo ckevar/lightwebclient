@@ -38,6 +38,9 @@ make main
 
 - *tgbotsendmessage.cpp* Sends a message to your telegram API. PAY ATTENTION, this DOES NOT LISTEN arriving messages, if you have the chat_id you can send messages.
 
+- *mongodb_atlas.cpp* An example how to findOne value on MongoDB cloud through ATLAS API. You can execute this with the "data.mongodb-api.com" domain.
+
+
 ## Buffer Size recommended
 |Web|Buffer Size (char)|REST Method|
 |-|-|-|

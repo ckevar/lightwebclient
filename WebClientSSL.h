@@ -20,6 +20,7 @@ typedef struct ResponseHeader
 	char TransferEnconding;
 	short ContentLength;
 	unsigned short status;
+	int size;
 } ResponseHeader;
 
 class WebClientSSL
@@ -39,6 +40,10 @@ public:
 	/* Executes requests get */
 	int get(const char *resource, char *buff, int buff_size); 
 	int post(const char *resource, char *buff, int buff_in, int buff_out); 
+
+	int responseHeader_size() {
+		return responseHeader.size;
+	}
 
 	/* gets error */
 	int get_error();
@@ -61,7 +66,7 @@ private:
 	int OpenConnection();
 	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
 	char HeaderParser(char *response_i);
-	void Read(char *response, int response_length);
+	int Read(char *response, int response_length);
 	void Write();
 
 };
