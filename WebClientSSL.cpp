@@ -238,10 +238,10 @@ char WebClientSSL::HeaderParser(char *response_i) {
 			if (response_i[i + 8] == 'i' &&
 				response_i[i + 9] == 'e' &&
 				response_i[i + 10] == ':') {
-				responseHeader.Cookie = response_i + i + 12;
+				i += 12;
+				responseHeader.Cookie = response_i + i;
 				while (response_i[i] != '\r') i++;
-				responseHeader.Cookie_size = response_i + i + 12 - responseHeader.Cookie;
-				std::cerr << responseHeader.Cookie_size << std::endl;
+				responseHeader.Cookie_size = response_i + i - responseHeader.Cookie;
 			}
 		}
 		/* Headers ends here */
@@ -265,6 +265,7 @@ int WebClientSSL::Read(char *response, int response_length){
 	responseHeader.ContentLength = -1; 		/* No Content Length */
 	responseHeader.status = 0;
 	responseHeader.size = 0;
+	responseHeader.chunckSize = 0;
 
 	m_pfd.fd = m_fd;
 	m_pfd.events = POLLIN;
@@ -319,11 +320,6 @@ int WebClientSSL::Read(char *response, int response_length){
 			if (isHeader < 0) return -8;
 		}
 
-		if (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) {
-			timeout = 50;
-		} else {
-			timeout = 0;
-		}
 		response_i += m_error;
 		response_length -= m_error;
 
@@ -337,12 +333,47 @@ int WebClientSSL::Read(char *response, int response_length){
 		/* 	
 			TODO: Find a way to compute the timeout for the chunks
 		*/
-		timeout = (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) ? 50 : 0;
+		if (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) {
+			timeout = 50;
+			if (isHeader == 0) {
+				int tmpchunckSize = 0; 
+				do {				
+					/* This where the chunck size is located */
+					char *tmp = response + responseHeader.size + 1 + responseHeader.chunckSize;
+					sscanf(tmp, "%X", &tmpchunckSize);
+					if (tmpchunckSize == 0) break;
+
+					/*
+						TODO: store where the chunk starts, and the length of such chunck.
+					*/
+					/* This is where the chunk starts */
+					while(*tmp != '\n') tmp++;
+
+					/* This is where the chunk should end */
+					tmp += tmpchunckSize + 1;
+					
+					/* if the whole chunck is already decoded then 
+					 the following condition should be right */
+					if (*tmp == '\r' && *(tmp + 1) == '\n') 
+						responseHeader.chunckSize += tmpchunckSize + 2;
+					
+					/* Otherwise the chunck is fully decoded yet */
+					else 
+						break;
+
+				} while (1);
+				if (tmpchunckSize == 0) break;
+			}
+			break;
+		} else {
+			timeout = 0;
+		}
+		// timeout = (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) ? 50 : 0;
 		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
 	}
+	*response_i = 0;
 
 	return response_i - response;
-	// std::cerr <<  response << std::endl;
 }
 
 int WebClientSSL::get(const char *resource, char *response, int response_length) {	
@@ -366,10 +397,8 @@ int WebClientSSL::post(const char *resource,
 	Write();
 	if (m_error < 0) return m_error;
 
-	int readBytes = Read(response_content, response_length);
-	if (m_error < 0) return m_error;
-	
-	return readBytes;
+	m_error = Read(response_content, response_length);
+	return m_error;
 }
 
 void WebClientSSL::set_header(const char *headerfield) {
@@ -379,6 +408,11 @@ void WebClientSSL::set_header(const char *headerfield) {
 	m_xtraheaders[xtraheaders_i] = (char *)headerfield;
 	xtraheaders_i++;
 }
+int WebClientSSL::Cookie(char **C) {
+	*C = responseHeader.Cookie;
+	return responseHeader.Cookie_size;
+}
+
 
 void WebClientSSL::show_request_headers() {
 	std::cerr << "BEGIN BREQUEST ->>" << std::endl;

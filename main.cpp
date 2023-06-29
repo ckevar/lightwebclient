@@ -19,7 +19,6 @@
 	I'm working on this
 */
 
-
 int main(int argc, char const *argv[])
 {
 	if (argc < 2) {
@@ -33,7 +32,7 @@ int main(int argc, char const *argv[])
 
 	char collection[] = "contacts";
 	char itemTag[] = "tomorrowcontacts";
-	unsigned short buff_size = 20000;
+	unsigned short buff_size = 22000;
 	char buff[buff_size];
 	char Api_Key[MDB_TOKEN_LEN + 9];
 
@@ -58,6 +57,7 @@ int main(int argc, char const *argv[])
 
 	char *buff_it = buff + webClient.responseHeader_size() + 1;
 
+	/* MONGODB APPLICATION STUFF */
 	/* check if replied  document is null or not */
 	while(buff_it < (buff + buff_io)) {
 		if (*buff_it == '\"') {
@@ -78,7 +78,10 @@ int main(int argc, char const *argv[])
 	}
 
 	/* Get Phones numbers reservations from HostelWORLD */
-	// std::cerr << buff_it << std::endl;
+	/*
+		TODO:
+		- Copy the resourceNames and Reservation Codes to another char array
+	*/
 	char *PhoneNumber[35]; 
 	char *resourceName[35];
 	char *reservationCode[35]; 
@@ -96,14 +99,14 @@ int main(int argc, char const *argv[])
 					buff_it += 24;
 					PhoneNumber_tmp = buff_it;
 					while(*buff_it != ',') buff_it++;
-					*buff_it = 0;
+					// *buff_it = 0;
 				} 
 			}
 			else if (*buff_it == 'B') {
 				if (memcmp(buff_it, "BookingMethodId\",\"value\":\"2\"", 28) == 0) {
 					buff_it += 28;
-					while(*buff_it != ',') buff_it++;
-					*buff_it = 0;
+					while(*buff_it != ',' && *buff_it != '}') buff_it++;
+					// *buff_it = 0;
 					*PhoneNumber_it = PhoneNumber_tmp;
 					PhoneNumber_it++;
 					isHostelworldGuest = 1;
@@ -114,8 +117,8 @@ int main(int argc, char const *argv[])
 					buff_it += 25;
 					*reservationCode_it = buff_it;
 					while(*buff_it != ',' && *buff_it != '}') buff_it++;
-					*buff_it = 0;
-					std::cerr << *reservationCode_it << std::endl;
+					// *buff_it = 0;
+					// std::cerr << *reservationCode_it << std::endl;
 				}
 			}
 			else if (*buff_it == 'r') {
@@ -124,8 +127,8 @@ int main(int argc, char const *argv[])
 					buff_it += 14;
 					*resourceName_it = buff_it;
 					while(*buff_it != ',' && *buff_it != '}') buff_it++;
-					*buff_it = 0;
-					std::cerr << *resourceName_it << std::endl;
+					// *buff_it = 0;
+					// std::cerr << *resourceName_it << std::endl;
 					isHostelworldGuest = 0;
 				}
 			}
@@ -133,15 +136,113 @@ int main(int argc, char const *argv[])
 		buff_it++;
 	}
 
-	/* Mongo DB ends here */
-	webClient.terminate_session();
-
-	/* Hostelworld starts here */
-	webClient.new_session("inbox.hostelworld.com");
-	if(webClient.get_error() < 0)
-		return -1;
-	buff_io = webClient.get("/", buff, 6000);
 	std::cerr << buff << std::endl;
+	/* Mongo DB ends here */
+	// webClient.terminate_session();
+
+	// /* Hostelworld starts here */
+	// webClient.new_session("inbox.hostelworld.com");
+	// if(webClient.get_error() < 0)
+	// 	return -1;
+	// buff_io = webClient.get("/", buff, 6000);
+	// char *Cookie = NULL;
+	// int CookieLen = webClient.Cookie(&Cookie);
+	// /* HOSTELWORLD APPLICATION STUFF, going straight to the content */
+	// buff_it = buff + webClient.responseHeader_size() + 1;
+	// char *formToken = NULL;
+	// /* seach for the formToken */
+	// // formToken" value="35be80b1fb04f845bac6b58726affc1a2b7d247f"
+	// while(buff_it < (buff + buff_io)) {
+	// 	if (*buff_it == 'f') {
+	// 		if (*(buff_it + 9) == '\"') {
+	// 			if (memcmp(buff_it, "formToken\" value=", 17) == 0) {
+	// 				buff_it += 18;
+	// 				formToken = buff_it;
+	// 				while(*buff_it != '\"') buff_it++;
+	// 				*buff_it = 0;
+	// 				break;
+	// 			}
+	// 		}
+	// 	}
+	// 	buff_it++;
+	// }
+	// if(buff_it >= (buff + buff_io))
+	// 	std::cerr << "[ERROR:] no formToken was found" << std::endl;
+
+	// /* Cookie and Token ends here */
+	// webClient.terminate_session();
+
+	/* LOGIN 
+		TODO: test this sections, get tokens
+	*/
+
+	// webClient.new_session("inbox.hostelworld.com");
+	// if(webClient.get_error() < 0)
+	// 	return -1;
+	// char CookieHeader[100];
+	// memcpy(CookieHeader, "Cookie:", 8);
+	// memcpy(CookieHeader + 8, Cookie, CookieLen);
+	// std::map<const char *, const char*> content;
+	// content["formToken"] = formToken;
+	// content["SessionLanguage"] = HOSTELWORLD_SESSION_LANGUAGE;
+	// content["HostelNumber"] = HOSTELWORLD_HOSTEL_NUMBER;
+	// content["Username"] = HOSTELWORLD_USERNAME;
+	// content["Password"] = HOSTELWORLD_PASSWORD;
+
+	// webClient.set_header(CookieHeader);
+	// webClient.set_header("Content-Type: application/x-www-form-urlencoded");
+	// buff_io = WebClient_urlencode(buff, content);
+	// buff_io = webClient.post("/inbox/trylogin.php", buff, buff_io, 6000);	
+
+	// CookieLen = webClient.Cookie(&Cookie);
+	// /* Cookie and Token ends here */
+	// webClient.terminate_session();
+
+	/* BOOKING VIEW -> iterate this part on reservation Codes
+		TODO: test this section
+	*/
+	// char reservationCodeTest[] = "554178086";
+	// char resource[50];
+
+	// webClient.new_session("inbox.hostelworld.com");
+	// if (webClient.get_error() < 0)
+	// 	return -1;
+	// sprintf (CookieHeader, "Cookie: %s", Cookie);
+	// sprintf(resource, "/booking/view/%s", reservationCodeTest);
+	// webClient.set_header(CookieHeader);
+	// memset(buff, '\0', 22000);
+	// buff_io = webClient.get(resource, buff, buff_size);
+	// buff_it = buff + webClient.responseHeader_size() + 1;
+	// std::cerr << "buff_io " << buff_io << std::endl;
+ 
+	// char bookingReferenceFound = 0;
+
+	// while(buff_it < (buff + buff_io)){
+	// 	if (*buff_it == 'b') {
+	// 		if (*(buff_it + 7) == 'R') {
+	// 			if(memcmp (buff_it, "bookingReference", 16) == 0) {
+	// 				bookingReferenceFound = 1;
+	// 			}
+	// 		}
+	// 	} 
+	// 	if (bookingReferenceFound) {
+	// 		if (*buff_it == 'p') {
+	// 			if (*(buff_it + 6) == ':') {
+
+	// 				while(*buff_it != ',') buff_it++;
+	// 				buff_it = 0;
+	// 			}
+	// 		}
+	// 	}
+	// 	buff_it++;
+	// }
+	/* Search for phone Number */
+	// webClient.terminate_session();
+
+	/* New session on MongoDB, to update the phone number */
+	/* New session on google, to update the phone number on People API */
+
+	/* New session on google, to generate the links */
 
 	return 0;
 }

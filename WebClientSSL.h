@@ -18,6 +18,7 @@
 typedef struct ResponseHeader
 {
 	char TransferEnconding;
+	int chunckSize;
 	short ContentLength;
 	char *Cookie;
 	int Cookie_size;
@@ -32,7 +33,7 @@ public:
 
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
-
+	int Cookie(char **Cookie);
 	/* Get request header*/
 	void show_request_headers();
 
