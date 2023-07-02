@@ -35,6 +35,7 @@ WebClientSSL::WebClientSSL(const char *host) {
 void WebClientSSL::new_session(const char *host) {
 	xtraheaders_i = 0;
 	m_hostname = (char *) host;
+	isShowRequest = 0;
 
 	m_ssl = SSL_new(m_ctx);
 	if (m_ssl != nullptr) {
@@ -180,16 +181,25 @@ Sec-Fetch-User: ?1\r\n", 94);
 		GET should not and that does not meant it cannot. You 
 		can modify this as you wish. 
 	*/
-	if (method == GET_METHOD) return;
+	if (method == GET_METHOD){
+		*http_it = 0;
+		return;
+	}
 
 	memcpy(http_it, content, content_length);
 	http_it += content_length;
+	*http_it = 0;
 
 }
 
 void WebClientSSL::Write() {
 	/* SSL_WRITE */
 	m_error = SSL_write(m_ssl, http, http_it - http);
+	if (isShowRequest) {
+		std::cout << "REQUESTING ON SERVER----" << std::endl;
+		std::cout << http << std::endl;
+		std::cout << "END REQUEST ------------" << std::endl << std::endl;
+	}
 
     if (m_error < 1) {
         std::cerr << "[ERROR:] on SSL_write" << std::endl;
@@ -265,7 +275,7 @@ int WebClientSSL::Read(char *response, int response_length){
 	responseHeader.ContentLength = -1; 		/* No Content Length */
 	responseHeader.status = 0;
 	responseHeader.size = 0;
-	responseHeader.chunckSize = 0;
+	responseHeader.chunkSize = 0;
 
 	m_pfd.fd = m_fd;
 	m_pfd.events = POLLIN;
@@ -274,6 +284,10 @@ int WebClientSSL::Read(char *response, int response_length){
 
 	while(m_pfd.revents == POLLIN) {	
 		m_error = SSL_read(m_ssl, response_i, response_length);
+		// response_i += m_error;
+		// *response_i = 0;
+		// response_i -= m_error;
+		// std::cerr << response_i << std::endl;
 		
 		if(m_error < 1) {
 			std::cerr << "[ERROR:] SSL_read " << m_error << ", SSL_get_error type: ";
@@ -334,43 +348,74 @@ int WebClientSSL::Read(char *response, int response_length){
 			TODO: Find a way to compute the timeout for the chunks
 		*/
 		if (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) {
-			timeout = 50;
+			timeout = 1000;
 			if (isHeader == 0) {
-				int tmpchunckSize = 0; 
+				int tmpchunkSize; 
 				do {				
-					/* This where the chunck size is located */
-					char *tmp = response + responseHeader.size + 1 + responseHeader.chunckSize;
-					sscanf(tmp, "%X", &tmpchunckSize);
-					if (tmpchunckSize == 0) break;
+					/* This where the chunk size is located */
+					char *tmp = response + responseHeader.size + 1 + responseHeader.chunkSize;
+					short chunkSize_size = 0;
+					tmpchunkSize = -1; /* No chunk size was read */ 
 
+					if (sscanf(tmp, "%X", &tmpchunkSize) != 1) std::cerr << "[ERROR:] Reading chunk size, chunkSize " <<  tmpchunkSize << std::endl;
+
+					#ifdef DEBUG_CHUNK_SIZES
+					std::cout << std::endl << "||>>>> CHUNK STARTS --------------- prevChunk: " << responseHeader.chunkSize;
+					std::cout << ", currentChunk: " << tmpchunkSize << " -- " << tmp << std::endl;
+					#endif
+
+					if (tmpchunkSize == 0) break;
 					/*
-						TODO: store where the chunk starts, and the length of such chunck.
+						TODO: store where the chunk starts, and the length of such chunk.
 					*/
 					/* This is where the chunk starts */
-					while(*tmp != '\n') tmp++;
+					while(*tmp != '\n') {
+						tmp++;
+						chunkSize_size++;
+					}
 
 					/* This is where the chunk should end */
-					tmp += tmpchunckSize + 1;
+					tmp += tmpchunkSize + 1;
+
+					#ifdef DEBUG_CHUNK_SIZES
+					std::cout << "||>>> previous chunk " << responseHeader.chunkSize << " -- " << std::endl;
+					#endif 
+
+					/* if the whole chunk is already decoded then 
+					 the following condition should be correct */
+					if (*tmp == '\r' && *(tmp + 1) == '\n') {
+						responseHeader.chunkSize += tmpchunkSize + 2 + chunkSize_size;
+
+						#ifdef DEBUG_CHUNK_SIZES
+						std::cout << "||>>> next CHUNK SIZE " << responseHeader.chunkSize << std::endl;
+						std::cout << "||>>> CHUNK ENDS -----------------" << std::endl;
+						#endif
+					} 
 					
-					/* if the whole chunck is already decoded then 
-					 the following condition should be right */
-					if (*tmp == '\r' && *(tmp + 1) == '\n') 
-						responseHeader.chunckSize += tmpchunckSize + 2;
-					
-					/* Otherwise the chunck is fully decoded yet */
-					else 
+					/* Otherwise the chunk ism't fully decoded yet */
+					else {
+						#ifdef DEBUG_CHUNK_SIZES
+						std::cout << "||>>> BREAKING INNER LOOP " << std::endl;
+						#endif
+
 						break;
+					}
 
 				} while (1);
-				if (tmpchunckSize == 0) break;
+
+				/* If the previous loop was broken by chunk size */
+				if (tmpchunkSize == 0)
+					break;
 			}
-			break;
 		} else {
 			timeout = 0;
 		}
-		// timeout = (responseHeader.TransferEnconding == TRANSFER_ENCODING_CHUNCKED) ? 50 : 0;
 		poll(&m_pfd, 1, timeout); /* POLLIN is set until there's no data to be read on the socket */
 	}
+	#ifdef DEBUG_CHUNK_SIZES
+	std::cout << "m_pfd.revents: " << m_pfd.revents << std::endl;
+	#endif
+
 	*response_i = 0;
 
 	return response_i - response;
@@ -378,7 +423,6 @@ int WebClientSSL::Read(char *response, int response_length){
 
 int WebClientSSL::get(const char *resource, char *response, int response_length) {	
 	BuildHeader(resource, nullptr, 0, GET_METHOD);
-	// std::cerr << http << std::endl;
 
 	Write();
 	if (m_error < 0) return m_error;
@@ -392,13 +436,16 @@ int WebClientSSL::post(const char *resource,
 {	
 
 	BuildHeader(resource, response_content, content_length, POST_METHOD);
-	// std::cout << http << std::endl;
 	
 	Write();
 	if (m_error < 0) return m_error;
 
 	m_error = Read(response_content, response_length);
 	return m_error;
+}
+
+void WebClientSSL::showRequest(){
+	isShowRequest = 1;
 }
 
 void WebClientSSL::set_header(const char *headerfield) {
@@ -414,7 +461,7 @@ int WebClientSSL::Cookie(char **C) {
 }
 
 
-void WebClientSSL::show_request_headers() {
+void WebClientSSL::show_requestHeaders() {
 	std::cerr << "BEGIN BREQUEST ->>" << std::endl;
 	std::cerr << http << std::endl;
 	std::cerr << "END BREQUEST -<<" << std::endl;

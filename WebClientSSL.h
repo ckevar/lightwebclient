@@ -18,7 +18,7 @@
 typedef struct ResponseHeader
 {
 	char TransferEnconding;
-	int chunckSize;
+	int chunkSize;
 	short ContentLength;
 	char *Cookie;
 	int Cookie_size;
@@ -35,14 +35,15 @@ public:
 	void set_header(const char *header_field);
 	int Cookie(char **Cookie);
 	/* Get request header*/
-	void show_request_headers();
+	void show_requestHeaders();
 
 	/* std::couts the server certificate */
 	void show_certificate();
 
 	/* Executes requests get */
-	int get(const char *resource, char *buff, int buff_size); 
-	int post(const char *resource, char *buff, int buff_in, int buff_out); 
+	int get(const char *resource, char *buff, int buff_size);
+	int post(const char *resource, char *buff, int buff_in, int buff_out);
+	void showRequest();
 
 	int responseHeader_size() {
 		return responseHeader.size;
@@ -59,6 +60,7 @@ private:
 
 	char http[HTTP_LENGTH];
 	char *http_it;
+	char isShowRequest;
 
 	char *m_hostname;
 	char *m_xtraheaders[MAX_ADDITIONAL_HEADERS];
