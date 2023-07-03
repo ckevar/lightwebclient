@@ -69,6 +69,7 @@ private:
 
 	SSL_CTX *m_ctx;
 	SSL *m_ssl;
+	char isSessionTerminated;
 
 	int OpenConnection();
 	void BuildHeader(const char *resource, char *buff, int buff_size, char method);

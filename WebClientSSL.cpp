@@ -36,6 +36,7 @@ void WebClientSSL::new_session(const char *host) {
 	xtraheaders_i = 0;
 	m_hostname = (char *) host;
 	isShowRequest = 0;
+	isSessionTerminated = 0;
 
 	m_ssl = SSL_new(m_ctx);
 	if (m_ssl != nullptr) {
@@ -357,7 +358,7 @@ int WebClientSSL::Read(char *response, int response_length){
 					short chunkSize_size = 0;
 					tmpchunkSize = -1; /* No chunk size was read */ 
 
-					if (sscanf(tmp, "%X", &tmpchunkSize) != 1) std::cerr << "[ERROR:] Reading chunk size, chunkSize " <<  tmpchunkSize << std::endl;
+					if (sscanf(tmp, "%X", &tmpchunkSize) != 1) std::cerr << "[WARNING:] Reading chunk size, chunkSize " <<  tmpchunkSize << std::endl;
 
 					#ifdef DEBUG_CHUNK_SIZES
 					std::cout << std::endl << "||>>>> CHUNK STARTS --------------- prevChunk: " << responseHeader.chunkSize;
@@ -473,6 +474,7 @@ void WebClientSSL::terminate_session() {
 		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
 	SSL_free(m_ssl);
 	close(m_fd);
+	isSessionTerminated = 1;
 }
 
 WebClientSSL::~WebClientSSL() {
@@ -482,7 +484,8 @@ WebClientSSL::~WebClientSSL() {
 	
 	SSL_free(m_ssl);
 	close(m_fd); */
-	terminate_session();
+	if (isSessionTerminated == 0)
+		terminate_session();
 	SSL_CTX_free(m_ctx);
 }
 

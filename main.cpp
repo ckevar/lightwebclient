@@ -82,8 +82,8 @@ int main(int argc, char const *argv[])
 		TODO:
 		- Copy the resourceNames and Reservation Codes to another char array
 	*/
-	char resourceName[35][29];
-	char reservationCode[35][17]; 
+	char resourceName[35][30];
+	char reservationCode[35][20]; 
 	char *PhoneNumber_tmp;
 	char *buff_it_tmp = 0;
 	char isHostelworldGuest = 0;
@@ -151,7 +151,7 @@ int main(int argc, char const *argv[])
 	/* Get Method */
 	buff_io = webClient.get("/", buff, 6000);
 	char *Cookie = NULL;
-	int CookieLen = webClient.Cookie(&Cookie);
+	webClient.Cookie(&Cookie);
 
 	/* HOSTELWORLD APPLICATION STUFF, going straight to the content */
 	buff_it = buff + webClient.responseHeader_size() + 1;
@@ -190,9 +190,13 @@ int main(int argc, char const *argv[])
 	webClient.new_session("inbox.hostelworld.com");
 	if(webClient.get_error() < 0)
 		return -1;
-	char CookieHeader[150];
+
+	char CookieHeader[250];
+	char *c = Cookie;
+	while(*c != ';') c++; // just selecting the first cookie, the InboxCookie
 	memcpy(CookieHeader, "Cookie: ", 8);
-	memcpy(CookieHeader + 8, Cookie, CookieLen);
+	memcpy(CookieHeader + 8, Cookie, c - Cookie);
+	*(CookieHeader + 8 + (c - Cookie)) = 0;
 
 	std::map<const char *, const char*> content;
 	content["formToken"] = formToken;
@@ -206,7 +210,7 @@ int main(int argc, char const *argv[])
 	buff_io = WebClient_urlencode(buff, content);
 	buff_io = webClient.post("/inbox/trylogin.php", buff, buff_io, 6000);	
 
-	CookieLen = webClient.Cookie(&Cookie);
+	webClient.Cookie(&Cookie);
 
 	/* Login ends here */
 	webClient.terminate_session();
@@ -218,63 +222,88 @@ int main(int argc, char const *argv[])
 
 	std::cout << "^^^ BOOKING VIEW " << std::endl;
 
-	char reservationCodeTest[] = "554622933";
+	char phoneNumbers[35][20];
 	char resource[50];
+	int i = 0;
 
-	webClient.new_session("inbox.hostelworld.com");
-	if (webClient.get_error() < 0)
-		return -1;
-
-	char *c = Cookie;
+	c = Cookie;
 	while(*c != ';') c++; // just selecting the first cookie, the InboxCookie
 	memcpy(CookieHeader, "Cookie: ", 8);
 	memcpy(CookieHeader + 8, Cookie, c - Cookie);
+	*(CookieHeader + 8 + (c - Cookie)) = 0;
 
-	sprintf(resource, "/booking/view/%s", reservationCodeTest);
-	webClient.set_header(CookieHeader);
-	memset(buff, 0, buff_size);
+	while(i < contact_it) {
+		webClient.new_session("inbox.hostelworld.com");
+		if (webClient.get_error() < 0)
+			return -1;
 
-	buff_io = webClient.get(resource, buff, buff_size);
-	buff_it = buff + webClient.responseHeader_size() + 1;
-	// std::cerr << "reading bytes " << buff_io << " BUFF " << buff << std::endl;
-	//------------------------------------------------------------//
+		sprintf(resource, "/booking/view/%s", reservationCode[i] + 6); /* + 6 skips the hostel Number */
+		webClient.set_header(CookieHeader);
+		memset(buff + buff_size/2, 0, buff_size/2); /* IMPORTANT, since pages are all similar, 
+												there might the possibility to grab previous
+												data or at least the bottom half*/
+		std::cout << resource << std::endl;
+		buff_io = webClient.get(resource, buff, buff_size);
+		buff_it = buff + webClient.responseHeader_size() + 1;
 
-	// std::cout << "BOOKING VIEW RESPONSE -------------" << buff_io << std::endl;
-	// std::cerr << buff << std::endl;
-	// std::cout << "-----------------------------------" << std::endl << std::endl;
- 
-	// char bookingReferenceFound = 0;
-	// while(buff_it < (buff + buff_io)) {
-	// 	if (*buff_it == 'b') {
-	// 		if (*(buff_it + 7) == 'R') {
-	// 			if(memcmp (buff_it, "bookingReference", 16) == 0) {
-	// 				bookingReferenceFound = 1;
-	// 			}
-	// 		}
-	// 	} 
-	// 	if (bookingReferenceFound) {
-	// 		if (*buff_it == 'p') {
-	// 			if (*(buff_it + 6) == ':') {
+		char bookingReferenceFound = 0;
+		char *tmp;
+		memcpy(phoneNumbers[i], "null\0", 5);
 
-	// 				while(*buff_it != ',') buff_it++;
-	// 				buff_it = 0;
-	// 				std::cerr << buff << std::endl;
-	// 				break;
-	// 			}
-	// 		}
-	// 	}
-	// 	buff_it++;
-	// }
-	// if (buff_it >= buff + buff_io) 
-	// 	std::cerr << "[ERROR:] phone number not found" << std::endl; 
+		while(buff_it < (buff + buff_io)) {
+			if (*buff_it == 'b' && bookingReferenceFound == 0) {
+				if (*(buff_it + 7) == 'R') {
+					if(memcmp (buff_it, "bookingReference\":\"", 19) == 0) {
+						buff_it += 25; /* it skips "52458-" too */
+						tmp = buff_it;
+						while(*buff_it != '\"') buff_it++;
+						if (memcmp(tmp, reservationCode[i] + 6, buff_it - tmp) == 0)
+							bookingReferenceFound = 1;
+					}
+				}
+			} 
+			if (bookingReferenceFound) {
+				if (*buff_it == 'p') {
+					if (*(buff_it + 7) == '\"') {
+						buff_it += 8; /* Skips '"' */
+						tmp = buff_it;
+						
+						if (*buff_it == '\"') break;
+						while(*buff_it != ',') buff_it++;
+						
+						if (buff_it - tmp < 4) break;
 
-	/* Search for phone Number Ends Here */
-	// webClient.terminate_session();
+						if (*tmp != '+') {
+							tmp--;
+							*tmp = '+';
+						}
+						
+						memcpy(phoneNumbers[i], tmp, buff_it - tmp);
+						break;
+					}
+				}
+			}
+			buff_it++;
+		}
+		if (buff_it >= buff + buff_io) {
+			if (bookingReferenceFound)
+				std::cerr << "[ERROR:] phone number field was not found" << std::endl;
+			else 
+				std::cerr << "[ERROR:] bookingReference field was not found" << std::endl; 
+		}
+		else if (*phoneNumbers[i] == 'n' && bookingReferenceFound) {
+			std::cerr << "[ERROR:] No phone number on this contact" << std::endl;
+		}
+		std::cout << reservationCode[i] << ' ' << phoneNumbers[i] << std::endl;
+		i++;
+
+		/* Search for phone Number Ends Here */
+		webClient.terminate_session();
+	}
 
 	/* New session on MongoDB, to update the phone number */
-	/* New session on google, to update the phone number on People API */
-
-	/* New session on google, to generate the links */
+	/* New session on emulating messaging, to update the phone number on People API */
+	/* New session on emulating messaging, to generate the links */
 
 	return 0;
 }
