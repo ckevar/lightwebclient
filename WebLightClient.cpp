@@ -1,4 +1,4 @@
-#include "WebClientSSL.h"
+#include "WebLightClient.h"
 
 #include <netdb.h>
 #include <iostream>
