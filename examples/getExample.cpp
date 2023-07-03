@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "WebClientSSL.h"
+#include "PapayitaWC.h"
 #include "apikeys.h"
 #include "BufferSizes.h"
 
@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	WebClientSSL webClient(argv[1]);
+	PapayitaWC webClient(argv[1]);
 	if(webClient.get_error() < 0)
 		return -1;
 

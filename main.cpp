@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "WebClientSSL.h"
+#include "PapayitaWC.h"
 /* In case you have you have to perform some api-keying
    create this file apikeys.h and include it here */
 #include "apikeys.h"
@@ -26,8 +26,8 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	WebClientSSL webClient(argv[1]);
-	if(webClient.get_error() < 0)
+	PapayitaWC papayita(argv[1]);
+	if(papayita.get_error() < 0)
 		return -1;
 
 	char collection[] = "contacts";
@@ -38,8 +38,8 @@ int main(int argc, char const *argv[])
 
 	sprintf(Api_Key, "Api-Key: %s",MDB_TOKEN);
 
-	webClient.set_header("Content-Type: application/json");
-	webClient.set_header(Api_Key);
+	papayita.set_header("Content-Type: application/json");
+	papayita.set_header(Api_Key);
 
 	unsigned short buff_io = sprintf(buff, "{\
 \"dataSource\":\"hpt\",\
@@ -49,13 +49,13 @@ int main(int argc, char const *argv[])
 \"tag\":\"%s\"\
 }}", collection, itemTag);
 
-	buff_io = webClient.post("/app/data-esgfv/endpoint/data/v1/action/findOne", buff, buff_io, buff_size);
+	buff_io = papayita.post("/app/data-esgfv/endpoint/data/v1/action/findOne", buff, buff_io, buff_size);
 	if (buff_io <= 0) {
 		std::cerr << "[ERROR:] nothing was return from server" << std::endl;
 		return buff_io;
 	}
 
-	char *buff_it = buff + webClient.responseHeader_size() + 1;
+	char *buff_it = buff + papayita.responseHeader_size() + 1;
 
 	/* MONGODB APPLICATION STUFF */
 	/* check if replied  document is null or not */
@@ -137,24 +137,24 @@ int main(int argc, char const *argv[])
 	}
 
 	/* Mongo DB ends here */
-	webClient.terminate_session();
+	papayita.terminate_session();
 
 	/* 
 		Hostelworld starts here, get cookie 
 	*/
 	std::cout << "^^^ GETTING TOKEN AND COOKIE" << std::endl;
 
-	webClient.new_session("inbox.hostelworld.com");
-	if(webClient.get_error() < 0)
+	papayita.new_session("inbox.hostelworld.com");
+	if(papayita.get_error() < 0)
 		return -1;
 
 	/* Get Method */
-	buff_io = webClient.get("/", buff, 6000);
+	buff_io = papayita.get("/", buff, 6000);
 	char *Cookie = NULL;
-	webClient.Cookie(&Cookie);
+	papayita.Cookie(&Cookie);
 
 	/* HOSTELWORLD APPLICATION STUFF, going straight to the content */
-	buff_it = buff + webClient.responseHeader_size() + 1;
+	buff_it = buff + papayita.responseHeader_size() + 1;
 	
 	/* 
 		search for the formToken 
@@ -179,7 +179,7 @@ int main(int argc, char const *argv[])
 		std::cerr << "[ERROR:] no formToken was found" << std::endl;
 
 	/* Cookie and Token ends here */
-	webClient.terminate_session();
+	papayita.terminate_session();
 
 	/* 
 		LOGIN 
@@ -187,8 +187,8 @@ int main(int argc, char const *argv[])
 	*/
 	std::cout << "^^^ LOGIN " << std::endl;
 
-	webClient.new_session("inbox.hostelworld.com");
-	if(webClient.get_error() < 0)
+	papayita.new_session("inbox.hostelworld.com");
+	if(papayita.get_error() < 0)
 		return -1;
 
 	char CookieHeader[250];
@@ -205,15 +205,15 @@ int main(int argc, char const *argv[])
 	content["Username"] = HOSTELWORLD_USERNAME;
 	content["Password"] = HOSTELWORLD_PASSWORD;
 
-	webClient.set_header(CookieHeader);
-	webClient.set_header("Content-Type: application/x-www-form-urlencoded");
+	papayita.set_header(CookieHeader);
+	papayita.set_header("Content-Type: application/x-www-form-urlencoded");
 	buff_io = WebClient_urlencode(buff, content);
-	buff_io = webClient.post("/inbox/trylogin.php", buff, buff_io, 6000);	
+	buff_io = papayita.post("/inbox/trylogin.php", buff, buff_io, 6000);	
 
-	webClient.Cookie(&Cookie);
+	papayita.Cookie(&Cookie);
 
 	/* Login ends here */
-	webClient.terminate_session();
+	papayita.terminate_session();
 
 	/* 
 		BOOKING VIEW -> iterate this part on reservation Codes
@@ -233,18 +233,18 @@ int main(int argc, char const *argv[])
 	*(CookieHeader + 8 + (c - Cookie)) = 0;
 
 	while(i < contact_it) {
-		webClient.new_session("inbox.hostelworld.com");
-		if (webClient.get_error() < 0)
+		papayita.new_session("inbox.hostelworld.com");
+		if (papayita.get_error() < 0)
 			return -1;
 
 		sprintf(resource, "/booking/view/%s", reservationCode[i] + 6); /* + 6 skips the hostel Number */
-		webClient.set_header(CookieHeader);
+		papayita.set_header(CookieHeader);
 		memset(buff + buff_size/2, 0, buff_size/2); /* IMPORTANT, since pages are all similar, 
 												there might the possibility to grab previous
 												data or at least the bottom half*/
 		std::cout << resource << std::endl;
-		buff_io = webClient.get(resource, buff, buff_size);
-		buff_it = buff + webClient.responseHeader_size() + 1;
+		buff_io = papayita.get(resource, buff, buff_size);
+		buff_it = buff + papayita.responseHeader_size() + 1;
 
 		char bookingReferenceFound = 0;
 		char *tmp;
@@ -277,7 +277,7 @@ int main(int argc, char const *argv[])
 							tmp--;
 							*tmp = '+';
 						}
-						
+
 						memcpy(phoneNumbers[i], tmp, buff_it - tmp);
 						break;
 					}
@@ -298,7 +298,7 @@ int main(int argc, char const *argv[])
 		i++;
 
 		/* Search for phone Number Ends Here */
-		webClient.terminate_session();
+		papayita.terminate_session();
 	}
 
 	/* New session on MongoDB, to update the phone number */

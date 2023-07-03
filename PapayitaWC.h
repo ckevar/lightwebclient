@@ -13,7 +13,7 @@
 #define POST_METHOD 2
 #define TRANSFER_ENCODING_CHUNCKED 1
 
-#define USER_AGENT_HEADER "User-Agent: lightWebClient 1.1.1\r\n"
+#define USER_AGENT_HEADER "User-Agent: PapayitaWebClient 1.1.0\r\n"
 
 typedef struct ResponseHeader
 {
@@ -26,10 +26,10 @@ typedef struct ResponseHeader
 	int size;
 } ResponseHeader;
 
-class WebLightClient
+class PapayitaWC
 {
 public:
-	WebLightClient(const char *host);
+	PapayitaWC(const char *host);
 
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
@@ -53,7 +53,7 @@ public:
 	int get_error();
 	void new_session(const char *host);
 	void terminate_session();
-	~WebLightClient();
+	~PapayitaWC();
 private:
 	int m_error;
 	int m_fd;

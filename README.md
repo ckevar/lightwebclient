@@ -1,5 +1,5 @@
-# lightwebclient
-It's a small web client impleted in C/C++ that supports basic websites, meaning:
+# Papayita Web Client
+It's a small web client impleted in C/C++ that supports the following:
 - Supports SSL, through OpenSSL, it automaticly browses on port 443. 
 - Supports HTTP/1.1, doesnt't support HTTP/2 or HTTP/3.
 - Supports deflated enconding, doesn't support gzip neither br.
@@ -18,7 +18,7 @@ std::map<const char *, const char*>
 - Doesn't support header response handling.
 - Doesn't support application/json
 
-The idea of the project is to be as light as possible.
+The goal of the project is to be as light as possible.
 
 ## Getting Started
 #### Compile

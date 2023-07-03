@@ -1,4 +1,4 @@
-#include "WebLightClient.h"
+#include "PapayitaWC.h"
 
 #include <netdb.h>
 #include <iostream>
@@ -13,7 +13,7 @@
  - Does not support Cache-Control
 */
 
-WebClientSSL::WebClientSSL(const char *host) {
+PapayitaWC::PapayitaWC(const char *host) {
 
 	/* Init SSL */
 
@@ -32,7 +32,7 @@ WebClientSSL::WebClientSSL(const char *host) {
 	}
 }
 
-void WebClientSSL::new_session(const char *host) {
+void PapayitaWC::new_session(const char *host) {
 	xtraheaders_i = 0;
 	m_hostname = (char *) host;
 	isShowRequest = 0;
@@ -54,7 +54,7 @@ void WebClientSSL::new_session(const char *host) {
 	}
 }
 
-int WebClientSSL::OpenConnection() {
+int PapayitaWC::OpenConnection() {
 	struct hostent *host;
 	
 	if((host = gethostbyname(m_hostname)) == nullptr) {
@@ -95,7 +95,7 @@ int WebClientSSL::OpenConnection() {
 }
 
 	
-void WebClientSSL::show_certificate() {
+void PapayitaWC::show_certificate() {
 	X509 *cert = SSL_get_peer_certificate(m_ssl); /* get the server's certificate */
     if (cert != nullptr) {
     	std::cerr << "Server certificates:" << std::endl;
@@ -114,11 +114,11 @@ void WebClientSSL::show_certificate() {
     	std::cerr << "[WARNING]: No client certificates configured." << std::endl;
 }
 
-int WebClientSSL::get_error() {
+int PapayitaWC::get_error() {
 	return m_error;
 }
 
-void WebClientSSL::BuildHeader(const char *resource, char *content, int content_length, char method) {
+void PapayitaWC::BuildHeader(const char *resource, char *content, int content_length, char method) {
 	http_it = http;
 
 	/* setting the get method */
@@ -193,7 +193,7 @@ Sec-Fetch-User: ?1\r\n", 94);
 
 }
 
-void WebClientSSL::Write() {
+void PapayitaWC::Write() {
 	/* SSL_WRITE */
 	m_error = SSL_write(m_ssl, http, http_it - http);
 	if (isShowRequest) {
@@ -216,7 +216,7 @@ void WebClientSSL::Write() {
     }
 }
 
-char WebClientSSL::HeaderParser(char *response_i) {
+char PapayitaWC::HeaderParser(char *response_i) {
 	if (response_i[5] == '2') {
 		m_error = -8;
 		std::cerr << "[ERROR:] HTTP/2 No supported" << std::endl;
@@ -266,7 +266,7 @@ char WebClientSSL::HeaderParser(char *response_i) {
 	return 1;
 }
 
-int WebClientSSL::Read(char *response, int response_length){
+int PapayitaWC::Read(char *response, int response_length){
 	char *response_i = response;
 	struct pollfd m_pfd;
 	char isHeader = 1;
@@ -422,7 +422,7 @@ int WebClientSSL::Read(char *response, int response_length){
 	return response_i - response;
 }
 
-int WebClientSSL::get(const char *resource, char *response, int response_length) {	
+int PapayitaWC::get(const char *resource, char *response, int response_length) {	
 	BuildHeader(resource, nullptr, 0, GET_METHOD);
 
 	Write();
@@ -432,7 +432,7 @@ int WebClientSSL::get(const char *resource, char *response, int response_length)
 	return m_error;
 }
 
-int WebClientSSL::post(const char *resource, 
+int PapayitaWC::post(const char *resource, 
 	char *response_content, int content_length, int response_length)
 {	
 
@@ -445,30 +445,30 @@ int WebClientSSL::post(const char *resource,
 	return m_error;
 }
 
-void WebClientSSL::showRequest(){
+void PapayitaWC::showRequest(){
 	isShowRequest = 1;
 }
 
-void WebClientSSL::set_header(const char *headerfield) {
+void PapayitaWC::set_header(const char *headerfield) {
 	/* TODO: 
 	- block adding headers such as Sec-Fetch-Mode, Sec-Fetch-Site, Sec-Fetch-User
 	*/
 	m_xtraheaders[xtraheaders_i] = (char *)headerfield;
 	xtraheaders_i++;
 }
-int WebClientSSL::Cookie(char **C) {
+int PapayitaWC::Cookie(char **C) {
 	*C = responseHeader.Cookie;
 	return responseHeader.Cookie_size;
 }
 
 
-void WebClientSSL::show_requestHeaders() {
+void PapayitaWC::show_requestHeaders() {
 	std::cerr << "BEGIN BREQUEST ->>" << std::endl;
 	std::cerr << http << std::endl;
 	std::cerr << "END BREQUEST -<<" << std::endl;
 }
 
-void WebClientSSL::terminate_session() {
+void PapayitaWC::terminate_session() {
 	m_error = SSL_shutdown(m_ssl);
 	if (m_error < 0) 
 		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;
@@ -477,7 +477,7 @@ void WebClientSSL::terminate_session() {
 	isSessionTerminated = 1;
 }
 
-WebClientSSL::~WebClientSSL() {
+PapayitaWC::~PapayitaWC() {
 	/*m_error = SSL_shutdown(m_ssl);
 	if (m_error < 0) 
 		std::cerr << "[ERROR:] on SSL_shutdown" << std::endl;

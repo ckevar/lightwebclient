@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "WebClientSSL.h"
+#include "PapayitaWC.h"
 /* In case you have you have to perform some api-keying
    create this file apikeys.h and include it here */
 #include "apikeys.h"
@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
-	WebClientSSL webClient(argv[1]);
+	PapayitaWC webClient(argv[1]);
 	if(webClient.get_error() < 0)
 		return -1;
 
