@@ -137,8 +137,8 @@ void PapayitaWC::BuildHeader(const char *resource, char *content, int content_le
 	http_it += sprintf(http_it, "Host: %s\r\n", m_hostname);
 
 	/* Setting user-agent */
-	memcpy(http_it, USER_AGENT_HEADER, 34);
-	http_it += 34;
+	memcpy(http_it, USER_AGENT_HEADER, 37);
+	http_it += 37;
 
 	/* Setting accept */
 	memcpy(http_it, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n", 84);

@@ -150,6 +150,7 @@ int main(int argc, char const *argv[])
 
 	/* Get Method */
 	buff_io = papayita.get("/", buff, 6000);
+	papayita.show_requestHeaders();
 	char *Cookie = NULL;
 	papayita.Cookie(&Cookie);
 
@@ -175,8 +176,10 @@ int main(int argc, char const *argv[])
 		}
 		buff_it++;
 	}
-	if(buff_it >= (buff + buff_io))
+	if(buff_it >= (buff + buff_io)) {
 		std::cerr << "[ERROR:] no formToken was found" << std::endl;
+		return -1;
+	}
 
 	/* Cookie and Token ends here */
 	papayita.terminate_session();

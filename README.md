@@ -21,15 +21,13 @@ std::map<const char *, const char*>
 The goal of the project is to be as light as possible.
 
 ## Getting Started
-#### Compile
-```bash
-make main
-```
-#### Run
+### Installation
+This will copy the libpapayitawc.so into /usr/lib and PapayitaWC.h into /usr/include 
 
 ```bash
-./main <domain>
+sudo make install
 ```
+
 ## Examples
 - *getExample.cpp* after compiling it, you can test it with www.google.com as you may have read, certain web sites such as google have a chuck type transfer encoding, something this lightWebClient isn't yet capable of handle, so that's why if you know (it comes in the response header of the site you're browsing) you can modify the poll line
 
