@@ -13,7 +13,18 @@
 #define POST_METHOD 2
 #define TRANSFER_ENCODING_CHUNCKED 1
 
-#define USER_AGENT_HEADER "User-Agent: PapayitaWebClient 1.1.0\r\n"
+#define USER_AGENT_HEADER "User-Agent: Papayita 1.1.0\r\n"
+
+/***** BEGIN CUSTOM TYPES *****/
+struct PA2YITA_BUFF_struct
+{
+	char *head; 		/* Head of the buffer */
+	char *tail;			/* Current reading of the buffer a.k.a. iterator */
+	int capacity;		/* Buffer capacity */
+	int size;			/* Current size of the buffer */
+};
+
+typedef PA2YITA_BUFF_struct papayita_buffer;
 
 typedef struct ResponseHeader
 {
@@ -25,11 +36,14 @@ typedef struct ResponseHeader
 	unsigned short status;
 	int size;
 } ResponseHeader;
+/***** END CUSTOM TYPES *****/
+
 
 class PapayitaWC
 {
 public:
 	PapayitaWC(const char *host);
+	PapayitaWC();
 
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
@@ -55,30 +69,49 @@ public:
 	void terminate_session();
 	~PapayitaWC();
 private:
+	/* Class error */
 	int m_error;
+
+	/* filde descripto of the socket */
 	int m_fd;
 
+	/* Content to be transmited to the server */
 	char http[HTTP_LENGTH];
 	char *http_it;
+
+	/* to show what's being transmitted 
+	to the server */
 	char isShowRequest;
 
 	char *m_hostname;
+
+	/* Users headers for request, maximun of
+	 10 headers */
 	char *m_xtraheaders[MAX_ADDITIONAL_HEADERS];
 	int xtraheaders_i;
+
+	/* Response header */
 	ResponseHeader responseHeader;
 
+	/* SSL Handlers */
 	SSL_CTX *m_ctx;
 	SSL *m_ssl;
 	char isSessionTerminated;
 
+	/* */
 	int OpenConnection();
 	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
 	char HeaderParser(char *response_i);
 	int Read(char *response, int response_length);
 	void Write();
 
+	void preConstructor();
+
 };
 
 /* Utility Functions */
 int WebClient_urlencode(char *buff, std::map<const char*, const char *> cntnt);
+
+
+
 #endif

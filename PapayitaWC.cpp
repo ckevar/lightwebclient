@@ -6,30 +6,42 @@
 #include <unistd.h>
 #include <poll.h>
 
-/* This client:
- - supports only HTTP/1.1
- - Supports only deflate encoding, futures versions will accept br
- - Does not support Upgrade-Insecure-Requests
- - Does not support Cache-Control
+/* 
+	This client:
+ 	- supports only HTTP/1.1
+ 	- Supports only deflate encoding, futures versions will accept br
+ 	- Does not support Upgrade-Insecure-Requests
+ 	- Does not support Cache-Control
 */
 
 PapayitaWC::PapayitaWC(const char *host) {
 
 	/* Init SSL */
+	preConstructor();
 
-
-	OpenSSL_add_all_algorithms(); // load & register all cryptos
-	SSL_load_error_strings();
-
-	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */
-	m_ctx = SSL_CTX_new(method);
-	
 	if (m_ctx != nullptr) 
 		new_session(host);
 	else {
 		std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
 		m_error = -1;
 	}
+}
+
+PapayitaWC::PapayitaWC() {
+
+	/* Init SSL */
+	preConstructor();
+	if (m_ctx == nullptr) {
+		std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
+		m_error = -1;
+	}
+}
+
+void PapayitaWC::preConstructor() {
+	OpenSSL_add_all_algorithms(); // load & register all cryptos
+	SSL_load_error_strings();
+	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */	
+	m_ctx = SSL_CTX_new(method);
 }
 
 void PapayitaWC::new_session(const char *host) {
