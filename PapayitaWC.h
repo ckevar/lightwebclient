@@ -14,6 +14,7 @@
 #define TRANSFER_ENCODING_CHUNCKED 1
 
 #define USER_AGENT_HEADER "User-Agent: Papayita 1.1.0\r\n"
+#define USER_AGENT_HEADER_SIZE 28
 
 /***** BEGIN CUSTOM TYPES *****/
 struct PA2YITA_BUFF_struct
