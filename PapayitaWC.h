@@ -16,6 +16,8 @@
 #define USER_AGENT_HEADER "User-Agent: Papayita 1.1.0\r\n"
 #define USER_AGENT_HEADER_SIZE 28
 
+#define MAX_NUMBER_OF_SET_COOKIE 5
+
 /***** BEGIN CUSTOM TYPES *****/
 struct PA2YITA_BUFF_struct
 {
@@ -32,8 +34,9 @@ typedef struct ResponseHeader
 	char TransferEnconding;
 	int chunkSize;
 	short ContentLength;
-	char *Cookie;
-	int Cookie_size;
+	char *Cookie[MAX_NUMBER_OF_SET_COOKIE];
+	int Cookie_size[MAX_NUMBER_OF_SET_COOKIE];
+	int Cookie_i;
 	unsigned short status;
 	int size;
 } ResponseHeader;
@@ -45,10 +48,11 @@ class PapayitaWC
 public:
 	PapayitaWC(const char *host);
 	PapayitaWC();
+	// PapayitaWC(papayita_buffer *buff);
 
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
-	int Cookie(char **Cookie);
+	int Cookie(char **Cookie, int c_i);
 	/* Get request header*/
 	void show_requestHeaders();
 

@@ -37,11 +37,24 @@ PapayitaWC::PapayitaWC() {
 	}
 }
 
+// PapayitaWC::PapayitaWC(papayita_buffer *b) {
+
+// 	/* Init SSL */
+// 	preConstructor();
+// 	if (m_ctx == nullptr) {
+// 		std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
+// 		m_error = -1;
+// 	}
+// 	m_buff = b;
+// }
+
 void PapayitaWC::preConstructor() {
 	OpenSSL_add_all_algorithms(); // load & register all cryptos
 	SSL_load_error_strings();
 	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */	
 	m_ctx = SSL_CTX_new(method);
+
+	m_buff = nullptr;
 }
 
 void PapayitaWC::new_session(const char *host) {
@@ -49,6 +62,7 @@ void PapayitaWC::new_session(const char *host) {
 	m_hostname = (char *) host;
 	isShowRequest = 0;
 	isSessionTerminated = 0;
+	responseHeader.Cookie_i = 0;
 
 	m_ssl = SSL_new(m_ctx);
 	if (m_ssl != nullptr) {
@@ -262,9 +276,11 @@ char PapayitaWC::HeaderParser(char *response_i) {
 				response_i[i + 9] == 'e' &&
 				response_i[i + 10] == ':') {
 				i += 12;
-				responseHeader.Cookie = response_i + i;
+				responseHeader.Cookie[responseHeader.Cookie_i] = response_i + i;
 				while (response_i[i] != '\r') i++;
-				responseHeader.Cookie_size = response_i + i - responseHeader.Cookie;
+				responseHeader.Cookie_size[responseHeader.Cookie_i] = response_i + i - responseHeader.Cookie[responseHeader.Cookie_i];
+				responseHeader.Cookie_i++;
+				responseHeader.Cookie_i = responseHeader.Cookie_i % MAX_NUMBER_OF_SET_COOKIE; 
 			}
 		}
 		/* Headers ends here */
@@ -285,7 +301,7 @@ int PapayitaWC::Read(char *response, int response_length){
 	int timeout = -1;
 
 	responseHeader.TransferEnconding = 0; 	/* No Transfer Enconde Field*/
-	responseHeader.ContentLength = -1; 		/* No Content Length */
+	responseHeader.ContentLength = 0; 		/* No Content Length */
 	responseHeader.status = 0;
 	responseHeader.size = 0;
 	responseHeader.chunkSize = 0;
@@ -295,13 +311,13 @@ int PapayitaWC::Read(char *response, int response_length){
 
 	poll(&m_pfd, 1, timeout);
 
-	while(m_pfd.revents == POLLIN) {	
+	while((m_pfd.revents == POLLIN) || (response_i - response) <= responseHeader.ContentLength) {	
 		m_error = SSL_read(m_ssl, response_i, response_length);
-		// response_i += m_error;
-		// *response_i = 0;
-		// response_i -= m_error;
-		// std::cerr << response_i << std::endl;
 		
+		#ifdef DEBUG_CHUNK_SIZES
+		std::cout << "m_error " << m_error << std::endl;
+		#endif
+
 		if(m_error < 1) {
 			std::cerr << "[ERROR:] SSL_read " << m_error << ", SSL_get_error type: ";
 			m_error = SSL_get_error(m_ssl, m_error);
@@ -468,9 +484,9 @@ void PapayitaWC::set_header(const char *headerfield) {
 	m_xtraheaders[xtraheaders_i] = (char *)headerfield;
 	xtraheaders_i++;
 }
-int PapayitaWC::Cookie(char **C) {
-	*C = responseHeader.Cookie;
-	return responseHeader.Cookie_size;
+int PapayitaWC::Cookie(char **C, int c_i) {
+	*C = responseHeader.Cookie[c_i];
+	return responseHeader.Cookie_size[c_i];
 }
 
 
