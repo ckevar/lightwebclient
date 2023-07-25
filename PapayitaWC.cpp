@@ -54,7 +54,7 @@ void PapayitaWC::preConstructor() {
 	const SSL_METHOD *method = SSLv23_client_method(); /* Create new client-method instance */	
 	m_ctx = SSL_CTX_new(method);
 
-	m_buff = nullptr;
+	// m_buff = nullptr;
 }
 
 void PapayitaWC::new_session(const char *host) {
@@ -367,10 +367,10 @@ int PapayitaWC::Read(char *response, int response_length){
 		response_length -= m_error;
 
 		if (response_length == 0) 
-			std::cerr << "[WARNING:] Buffer size might be too small." << std::endl;
+			std::cerr << "[WARNING:] Buffer size might be too small. on host " << m_hostname << std::endl;
 
 		else if (response_length < 0) {
-			std::cerr << "[WARNING:] Buffer size is too small." << std::endl;
+			std::cerr << "[WARNING:] Buffer size is too small on host " << m_hostname << std::endl;
 			return -9;
 		}
 		/* 	
