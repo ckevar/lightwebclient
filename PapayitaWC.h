@@ -46,71 +46,86 @@ typedef struct ResponseHeader
 class PapayitaWC
 {
 public:
+	/** Binds the host over TCP and SSL ***/
 	PapayitaWC(const char *host);
 	PapayitaWC();
-	// PapayitaWC(papayita_buffer *buff);
+	// PapayitaWC(papayita_buffer *buff); // This is a future
+	// implementation where the object can be created using a buffer
 
+	void new_session(const char *host);
+	void terminate_session();
+	/* gets general errors error */
+	int get_error();
+	/**************************************/
+	
+	/*** SSL Oriented ***/
+	/* std::couts the server certificate */
+	void show_certificate();
+	/********************/
+
+	/*** HTTP1.1 operations ***/
 	/* Set a Header field, i.e.: "Cookie: <somecookie>"*/
 	void set_header(const char *header_field);
 	int Cookie(char **Cookie, int c_i);
 	/* Get request header*/
 	void show_requestHeaders();
-
-	/* std::couts the server certificate */
-	void show_certificate();
-
-	/* Executes requests get */
-	int get(const char *resource, char *buff, int buff_size);
-	int post(const char *resource, char *buff, int buff_in, int buff_out);
-	void showRequest();
-
 	int responseHeader_size() {
 		return responseHeader.size;
 	}
+	/*************************/
 
-	/* gets error */
-	int get_error();
-	void new_session(const char *host);
-	void terminate_session();
+	/*** RESTful requests ***/
+	int get(const char *resource, char *buff, int buff_size);
+	int post(const char *resource, char *buff, int buff_in, int buff_out);
+	void showRequest();
+	/************************/
+
 	~PapayitaWC();
 private:
+
+	/*** Class General Variables ***/
 	/* Class error */
 	int m_error;
-
-	/* filde descripto of the socket */
+	/* file descripto of the socket */
 	int m_fd;
-
-	/* Content to be transmited to the server */
-	char http[HTTP_LENGTH];
-	char *http_it;
-
 	/* to show what's being transmitted 
 	to the server */
 	char isShowRequest;
-
 	char *m_hostname;
+	/*******************************/
+
+	/*** SSL Handlers ***/
+	SSL_CTX *m_ctx;
+	SSL *m_ssl;
+	char isSessionTerminated;
+	/********************/
+
+	/*** HTTP variablese ***/
+	/* Content to be transmited to the server */
+	char http[HTTP_LENGTH];
+	char *http_it;
 
 	/* Users headers for request, maximun of
 	 10 headers */
 	char *m_xtraheaders[MAX_ADDITIONAL_HEADERS];
 	int xtraheaders_i;
-
 	/* Response header */
 	ResponseHeader responseHeader;
+	/***********************/
 
-	/* SSL Handlers */
-	SSL_CTX *m_ctx;
-	SSL *m_ssl;
-	char isSessionTerminated;
 
-	/* */
+	/*** TCP and SSL Ops ***/
 	int OpenConnection();
-	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
-	char HeaderParser(char *response_i);
+	/* Loads every SSL needs */
+	void preConstructor();
+	/* Read and write over TCP */
 	int Read(char *response, int response_length);
 	void Write();
+	/***************/
 
-	void preConstructor();
+	/*** HTTP1.1 ops ***/
+	void BuildHeader(const char *resource, char *buff, int buff_size, char method);
+	char HeaderParser(char *response_i);
 
 };
 

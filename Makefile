@@ -21,5 +21,8 @@ install: libpapayitawc.so
 libpapayitawc.so: PapayitaWC.cpp PapayitaWC.h
 	$(CPP) -fPIC -shared -o $@ PapayitaWC.cpp $(CFLAGS)
 
+test: test/test.cpp
+	$(CPP) -o $@ $^ $(CFLAGS) -lpapayitawc
+
 clear:
 	rm main main_o *.o mdebug *.so

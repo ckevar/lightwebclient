@@ -37,17 +37,6 @@ PapayitaWC::PapayitaWC() {
 	}
 }
 
-// PapayitaWC::PapayitaWC(papayita_buffer *b) {
-
-// 	/* Init SSL */
-// 	preConstructor();
-// 	if (m_ctx == nullptr) {
-// 		std::cerr << "[ERROR:] SST_CTX_new returned nullptr." << std::endl;
-// 		m_error = -1;
-// 	}
-// 	m_buff = b;
-// }
-
 void PapayitaWC::preConstructor() {
 	OpenSSL_add_all_algorithms(); // load & register all cryptos
 	SSL_load_error_strings();
